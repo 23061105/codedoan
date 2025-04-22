@@ -13,7 +13,6 @@ import {
   Share,
   ThumbsUp,
 } from "lucide-react";
-
 const SocialHome = () => {
   return (
     <>
