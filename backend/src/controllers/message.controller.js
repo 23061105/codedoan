@@ -71,3 +71,33 @@ export const sendMessage = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const markMessageAsRead = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({ error: "Message not found" });
+    }
+
+    // Only the receiver can mark a message as read
+    if (message.receiverId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    message.read = true;
+    await message.save();
+
+    // Notify the sender via socket.io
+    const senderSocketId = getReceiverSocketId(message.senderId.toString());
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messageRead", { messageId });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.log("Error in markMessageAsRead controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

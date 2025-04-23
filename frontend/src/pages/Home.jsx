@@ -15,18 +15,62 @@ import {
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChatContainer from "../Components/ChatContainer.jsx";
+import { useChatStore } from "../store/useChatStore.js";
+import { useAuthStore } from "../store/useAuthStore.js";
+import toast from "react-hot-toast";
 
 const SocialHome = () => {
   // Quản lý hiển thị popup và lưu thông tin cuộc hội thoại được chọn
   const [showMessagePopup, setShowMessagePopup] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  const { users, getUsers, isUsersLoading, setSelectedUser } = useChatStore();
+  const { authUser, onlineUsers, connectSocket } = useAuthStore();
+
+  // Fetch users and ensure socket connection when component mounts
+  useEffect(() => {
+    getUsers();
+
+    // Ensure socket connection is established
+    if (authUser && authUser._id) {
+      connectSocket();
+    }
+  }, [getUsers, connectSocket, authUser]);
+
+  // Subscribe to new messages for notifications when chat window is closed
+  useEffect(() => {
+    const socket = useAuthStore.getState().socket;
+
+    if (socket) {
+      const handleNewMessage = (newMessage) => {
+        // Only show notification if chat popup is not open
+        if (!showMessagePopup) {
+          // Find the sender in the users list
+          const sender = users.find((user) => user._id === newMessage.senderId);
+          if (sender) {
+            toast.success(`New message from ${sender.fullName}`);
+          }
+        }
+      };
+
+      socket.on("newMessage", handleNewMessage);
+
+      return () => {
+        socket.off("newMessage", handleNewMessage);
+      };
+    }
+  }, [showMessagePopup, users]);
 
   // Khi người dùng click vào tin nhắn, lưu lại thông tin cuộc hội thoại và mở modal
-  const handleMessageClick = (item) => {
-    setSelectedMessage(item);
+  const handleMessageClick = (user) => {
+    setSelectedUser(user);
     setShowMessagePopup(true);
+    toast.success(`Chat started with ${user.fullName}`);
+  };
+
+  // Check if a user is online
+  const isUserOnline = (userId) => {
+    return onlineUsers.includes(userId);
   };
 
   return (
@@ -49,7 +93,9 @@ const SocialHome = () => {
             </button>
             <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
               <img
-                src="/placeholder.svg?height=50&width=50"
+                src={
+                  authUser?.profilePic || "/placeholder.svg?height=50&width=50"
+                }
                 alt="Profile"
                 className="w-full"
               />
@@ -66,29 +112,30 @@ const SocialHome = () => {
             <div className="p-4 bg-white rounded-lg flex items-center gap-4 max-lg:hidden">
               <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
                 <img
-                  src="/placeholder.svg?height=50&width=50"
+                  src={
+                    authUser?.profilePic ||
+                    "/placeholder.svg?height=50&width=50"
+                  }
                   alt="Profile"
                   className="w-full"
                 />
               </div>
               <div>
-                <h4 className="font-medium">Diana Ayi</h4>
-                <p className="text-gray-500 text-sm">@dayi</p>
+                <h4 className="font-medium">{authUser?.fullName || "User"}</h4>
+                <p className="text-gray-500 text-sm">
+                  @{authUser?.email?.split("@")[0] || "user"}
+                </p>
               </div>
             </div>
             {/* SIDEBAR MENU */}
             <div className="mt-4 bg-white rounded-lg">
-              <a
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100 bg-gray-100 rounded-tl-lg overflow-hidden"
-              >
+              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100 bg-gray-100 rounded-tl-lg overflow-hidden">
                 <span className="before:content-[''] before:block before:w-2 before:h-full before:absolute before:bg-purple-500">
                   <Home className="text-purple-500 text-[1.4rem] ml-4 relative" />
                 </span>
                 <h3 className="ml-4 text-purple-500 max-lg:hidden">Home</h3>
               </a>
-              <a
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-              >
+              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100">
                 <span>
                   <Compass className="text-gray-500 text-[1.4rem] ml-4 relative" />
                 </span>
@@ -140,18 +187,14 @@ const SocialHome = () => {
                 <h3 className="ml-4 max-lg:hidden">Message</h3>
               </Link>
 
-              <a
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-              >
+              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100">
                 <span>
                   <Bookmark className="text-gray-500 text-[1.4rem] ml-4 relative" />
                 </span>
                 <h3 className="ml-4 max-lg:hidden">Bookmarks</h3>
               </a>
 
-              <a
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-              >
+              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100">
                 <span>
                   <ChartLine className="text-gray-500 text-[1.4rem] ml-4 relative" />
                 </span>
@@ -168,9 +211,7 @@ const SocialHome = () => {
                 <h3 className="ml-4 max-lg:hidden">Themes</h3>
               </a>
 
-              <a
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100 rounded-bl-lg overflow-hidden"
-              >
+              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100 rounded-bl-lg overflow-hidden">
                 <span>
                   <Settings className="text-gray-500 text-[1.4rem] ml-4 relative" />
                 </span>
@@ -185,127 +226,127 @@ const SocialHome = () => {
 
           {/* MIDDLE CONTENT */}
           <div className="max-md:col-span-2 max-md:col-start-1">
-           {/* STORIES */}
-                      <div className="flex justify-between h-48 gap-2">
-                        {[1, 2, 3, 4, 5, 6].map((item, index) => (
-                          <div
-                            key={index}
-                            className="p-4 rounded-lg flex flex-col justify-between items-center text-white text-xs w-full relative overflow-hidden bg-cover bg-center"
-                            style={{
-                              backgroundImage: `url('/placeholder.svg?height=200&width=150&text=Story ${item}')`,
-                            }}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent h-20 bottom-0 w-full"></div>
-                            <div className="w-8 h-8 rounded-full border-2 border-purple-500 self-start z-10">
-                              <img
-                                src={`/placeholder.svg?height=30&width=30&text=${item}`}
-                                alt="Profile"
-                                className="w-full rounded-full"
-                              />
-                            </div>
-                            <p className="z-10">
-                              {index === 0 ? "Your story" : `Story ${item}`}
-                            </p>
-                          </div>
-                        ))}
+            {/* STORIES */}
+            <div className="flex justify-between h-48 gap-2">
+              {[1, 2, 3, 4, 5, 6].map((item, index) => (
+                <div
+                  key={index}
+                  className="p-4 rounded-lg flex flex-col justify-between items-center text-white text-xs w-full relative overflow-hidden bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url('/placeholder.svg?height=200&width=150&text=Story ${item}')`,
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent h-20 bottom-0 w-full"></div>
+                  <div className="w-8 h-8 rounded-full border-2 border-purple-500 self-start z-10">
+                    <img
+                      src={`/placeholder.svg?height=30&width=30&text=${item}`}
+                      alt="Profile"
+                      className="w-full rounded-full"
+                    />
+                  </div>
+                  <p className="z-10">
+                    {index === 0 ? "Your story" : `Story ${item}`}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* CREATE POST */}
+            <div className="flex items-center justify-between mt-4 bg-white p-4 rounded-full">
+              <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                <img
+                  src="/placeholder.svg?height=50&width=50"
+                  alt="Profile"
+                  className="w-full"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="What's on your mind, Diana?"
+                className="w-full ml-4 bg-transparent focus:outline-none text-gray-800"
+              />
+              <button className="bg-purple-500 text-white py-2 px-8 rounded-full font-medium text-sm hover:opacity-80 transition-all">
+                Post
+              </button>
+            </div>
+
+            {/* FEEDS */}
+            <div className="mt-4 space-y-4">
+              {[1, 2, 3].map((item, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 text-sm">
+                  <div className="flex justify-between">
+                    <div className="flex gap-4">
+                      <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                        <img
+                          src={`/placeholder.svg?height=50&width=50&text=${item}`}
+                          alt="Profile"
+                          className="w-full"
+                        />
                       </div>
-          
-                      {/* CREATE POST */}
-                      <div className="flex items-center justify-between mt-4 bg-white p-4 rounded-full">
-                        <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                      <div>
+                        <h3 className="font-medium">Lana Rose</h3>
+                        <small>Dubai, 15 MINUTES AGO</small>
+                      </div>
+                    </div>
+                    <span>
+                      <EllipsisHorizontal className="text-xl cursor-pointer" />
+                    </span>
+                  </div>
+
+                  <div className="rounded-lg overflow-hidden my-3">
+                    <img
+                      src={`/placeholder.svg?height=400&width=600&text=Feed ${item}`}
+                      alt="Feed"
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center text-xl my-2">
+                    <div className="flex gap-4">
+                      <ThumbsUp className="cursor-pointer" />
+                      <MessageSquare className="cursor-pointer" />
+                      <Share className="cursor-pointer" />
+                    </div>
+                    <div>
+                      <Bookmark className="cursor-pointer" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <div className="flex">
+                      {[1, 2, 3].map((likeItem, likeIndex) => (
+                        <div
+                          key={likeIndex}
+                          className={`w-6 h-6 rounded-full overflow-hidden border-2 border-white ${
+                            likeIndex > 0 ? "-ml-2" : ""
+                          }`}
+                        >
                           <img
-                            src="/placeholder.svg?height=50&width=50"
+                            src={`/placeholder.svg?height=30&width=30&text=${likeItem}`}
                             alt="Profile"
                             className="w-full"
                           />
                         </div>
-                        <input
-                          type="text"
-                          placeholder="What's on your mind, Diana?"
-                          className="w-full ml-4 bg-transparent focus:outline-none text-gray-800"
-                        />
-                        <button className="bg-purple-500 text-white py-2 px-8 rounded-full font-medium text-sm hover:opacity-80 transition-all">
-                          Post
-                        </button>
-                      </div>
-          
-                      {/* FEEDS */}
-                      <div className="mt-4 space-y-4">
-                        {[1, 2, 3].map((item, index) => (
-                          <div key={index} className="bg-white rounded-lg p-4 text-sm">
-                            <div className="flex justify-between">
-                              <div className="flex gap-4">
-                                <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                                  <img
-                                    src={`/placeholder.svg?height=50&width=50&text=${item}`}
-                                    alt="Profile"
-                                    className="w-full"
-                                  />
-                                </div>
-                                <div>
-                                  <h3 className="font-medium">Lana Rose</h3>
-                                  <small>Dubai, 15 MINUTES AGO</small>
-                                </div>
-                              </div>
-                              <span>
-                                <EllipsisHorizontal className="text-xl cursor-pointer" />
-                              </span>
-                            </div>
-          
-                            <div className="rounded-lg overflow-hidden my-3">
-                              <img
-                                src={`/placeholder.svg?height=400&width=600&text=Feed ${item}`}
-                                alt="Feed"
-                                className="w-full"
-                              />
-                            </div>
-          
-                            <div className="flex justify-between items-center text-xl my-2">
-                              <div className="flex gap-4">
-                                <ThumbsUp className="cursor-pointer" />
-                                <MessageSquare className="cursor-pointer" />
-                                <Share className="cursor-pointer" />
-                              </div>
-                              <div>
-                                <Bookmark className="cursor-pointer" />
-                              </div>
-                            </div>
-          
-                            <div className="flex items-center">
-                              <div className="flex">
-                                {[1, 2, 3].map((likeItem, likeIndex) => (
-                                  <div
-                                    key={likeIndex}
-                                    className={`w-6 h-6 rounded-full overflow-hidden border-2 border-white ${
-                                      likeIndex > 0 ? "-ml-2" : ""
-                                    }`}
-                                  >
-                                    <img
-                                      src={`/placeholder.svg?height=30&width=30&text=${likeItem}`}
-                                      alt="Profile"
-                                      className="w-full"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                              <p className="ml-2">
-                                Liked by <b>Lam</b> and <b>2,322 others</b>
-                              </p>
-                            </div>
-          
-                            <div className="mt-2">
-                              <p>
-                                <b>Lam</b> Lorem ipsum dolor sit amet.
-                                <span className="text-purple-500">#lifestyle</span>
-                              </p>
-                            </div>
-                            <div className="text-gray-500 mt-1">
-                              View all 277 comments
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      ))}
                     </div>
+                    <p className="ml-2">
+                      Liked by <b>Lam</b> and <b>2,322 others</b>
+                    </p>
+                  </div>
+
+                  <div className="mt-2">
+                    <p>
+                      <b>Lam</b> Lorem ipsum dolor sit amet.
+                      <span className="text-purple-500">#lifestyle</span>
+                    </p>
+                  </div>
+                  <div className="text-gray-500 mt-1">
+                    View all 277 comments
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* RIGHT SIDEBAR */}
           <div className="h-max sticky top-[var(--sticky-top-right)] bottom-0 max-md:hidden">
@@ -339,38 +380,41 @@ const SocialHome = () => {
               </div>
 
               {/* Danh sách tin nhắn */}
-              {[1, 2, 3, 4, 5].map((item, index) => (
-                <div
-                  key={index}
-                  className="flex gap-4 mb-4 cursor-pointer"
-                  onClick={() => handleMessageClick(item)}
-                >
-                  <div className="relative">
-                    <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                      <img
-                        src={`/placeholder.svg?height=50&width=50&text=${item}`}
-                        alt="Profile"
-                        className="w-full rounded-full"
-                      />
+              {isUsersLoading ? (
+                <div className="text-center py-4">Loading...</div>
+              ) : users.length > 0 ? (
+                users.map((user) => (
+                  <div
+                    key={user._id}
+                    className="flex gap-4 mb-4 cursor-pointer"
+                    onClick={() => handleMessageClick(user)}
+                  >
+                    <div className="relative">
+                      <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                        <img
+                          src={
+                            user.profilePic ||
+                            "/placeholder.svg?height=50&width=50"
+                          }
+                          alt="Profile"
+                          className="w-full rounded-full"
+                        />
+                      </div>
+                      {isUserOnline(user._id) && (
+                        <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
+                      )}
                     </div>
-                    {index === 4 && (
-                      <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
-                    )}
+                    <div>
+                      <h5 className="font-medium">{user.fullName}</h5>
+                      <p className="text-sm text-gray-500">
+                        {isUserOnline(user._id) ? "Online" : "Offline"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h5 className="font-medium">
-                      {index === 4 ? "SUSAN" : "Edem_Quist"}
-                    </h5>
-                    <p
-                      className={`text-sm ${
-                        index === 3 ? "font-medium" : "text-gray-500"
-                      }`}
-                    >
-                      {index === 4 ? "BIRTHDAY" : "Just woke up bruh"}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-center py-4">No users found</div>
+              )}
             </div>
 
             {/* FRIEND REQUESTS */}
@@ -407,36 +451,30 @@ const SocialHome = () => {
       </main>
 
       {/* POPUP MODAL CHAT */}
-{showMessagePopup && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
-      <button
-        onClick={() => setShowMessagePopup(false)}
-        className="absolute top-2 right-2"
-      >
-        <X className="w-6 h-6 text-gray-600" />
-      </button>
-      <h2 className="text-xl font-bold mb-4">
-        Chat with {selectedMessage === 4 ? "SUSAN" : "Edem_Quist"}
-      </h2>
-      <ChatContainer />
-      { <form className="flex">
-        <input
-          type="text"
-          placeholder="Type a message..."
-          className="flex-1 border border-gray-300 p-2 rounded-lg mr-2"
-        />
-        <button
-          type="submit"
-          className="bg-purple-500 text-white py-2 px-4 rounded-lg"
-        >
-          Send
-        </button>
-      </form> }
-    </div>
-  </div>
-)}
-
+      {showMessagePopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-lg h-[90vh] max-h-[700px] flex flex-col overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                Chat with{" "}
+                {useChatStore.getState().selectedUser?.fullName || "User"}
+                {isUserOnline(useChatStore.getState().selectedUser?._id) && (
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+                )}
+              </h2>
+              <button
+                onClick={() => setShowMessagePopup(false)}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ChatContainer />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

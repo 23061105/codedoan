@@ -4,6 +4,7 @@ import {
   getMessages,
   getUsersForSidebar,
   sendMessage,
+  markMessageAsRead,
 } from "../controllers/message.controller.js";
 
 const router = express.Router();
@@ -13,5 +14,7 @@ router.get("/users", protectRoute, getUsersForSidebar);
 router.get("/:id", protectRoute, getMessages);
 //Gửi tin nhắn
 router.post("/send/:id", protectRoute, sendMessage);
+//Đánh dấu tin nhắn đã đọc
+router.put("/read/:messageId", protectRoute, markMessageAsRead);
 
 export default router;

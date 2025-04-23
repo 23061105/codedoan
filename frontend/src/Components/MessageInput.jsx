@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { Image, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
@@ -7,7 +7,9 @@ const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const { sendMessage, startTyping } = useChatStore();
+  const typingTimeoutRef = useRef(null);
+  const inputRef = useRef(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -42,13 +44,42 @@ const MessageInput = () => {
       setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+
+      // Focus the input field again
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
     }
   };
 
+  // Handle typing indicator
+  useEffect(() => {
+    const handleTyping = () => {
+      startTyping();
+    };
+
+    if (text && text.trim() !== "") {
+      handleTyping();
+    }
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [text, startTyping]);
+
+  // Focus the input field when the component mounts
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
   return (
-    <div className="p-4 w-full">
+    <div className="py-3 px-4 w-full bg-white">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -72,6 +103,7 @@ const MessageInput = () => {
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
         <div className="flex-1 flex gap-2">
           <input
+            ref={inputRef}
             type="text"
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
@@ -97,7 +129,7 @@ const MessageInput = () => {
         </div>
         <button
           type="submit"
-          className="btn btn-sm btn-circle"
+          className="btn btn-sm btn-circle bg-purple-500 hover:bg-purple-600 text-white"
           disabled={!text.trim() && !imagePreview}
         >
           <Send size={22} />
