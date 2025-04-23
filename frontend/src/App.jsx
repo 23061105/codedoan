@@ -4,6 +4,7 @@ import viteLogo from "/vite.svg";
 import Home from "./pages/Home";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
 import Navbar from "./components/Navbar";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
@@ -44,6 +45,8 @@ function App() {
           path="/login"
           element={!authUser ? <LoginPage /> : <Navigate to="/" />}
         />
+
+        <Route path="/message" element={<HomePage />} />
       </Routes>
       <Toaster />
     </>
