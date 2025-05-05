@@ -31,17 +31,17 @@ const SocialHome = () => {
   const [showMessagePopup, setShowMessagePopup] = useState(false);
   const { users, getUsers, isUsersLoading, setSelectedUser } = useChatStore();
   const { authUser, onlineUsers, connectSocket } = useAuthStore();
-  const { 
-    posts, 
-    getPosts, 
-    isLoading, 
-    createPost, 
-    likePost, 
-    addComment, 
-    deletePost, 
-    isCreatingPost, 
+  const {
+    posts,
+    getPosts,
+    isLoading,
+    createPost,
+    likePost,
+    addComment,
+    deletePost,
+    isCreatingPost,
     loadMorePosts,
-    pagination
+    pagination,
   } = usePostStore();
 
   // State for post creation
@@ -93,17 +93,17 @@ const SocialHome = () => {
   // Handle creating a new post
   const handleCreatePost = async (e) => {
     e.preventDefault();
-    
+
     if (!postText.trim() && !postImage) {
       toast.error("Post cannot be empty");
       return;
     }
-    
+
     const result = await createPost({
       text: postText.trim(),
-      image: postImage
+      image: postImage,
     });
-    
+
     if (result) {
       setPostText("");
       setPostImage(null);
@@ -125,10 +125,10 @@ const SocialHome = () => {
       toast.error("Comment cannot be empty");
       return;
     }
-    
+
     await addComment(postId, commentText[postId]);
-    setCommentText(prev => ({ ...prev, [postId]: "" }));
-    setShowCommentInput(prev => ({ ...prev, [postId]: false }));
+    setCommentText((prev) => ({ ...prev, [postId]: "" }));
+    setShowCommentInput((prev) => ({ ...prev, [postId]: false }));
   };
 
   // Handle deleting a post
@@ -140,9 +140,9 @@ const SocialHome = () => {
 
   // Handle showing/hiding comment input
   const toggleCommentInput = (postId) => {
-    setShowCommentInput(prev => ({ 
-      ...prev, 
-      [postId]: !prev[postId] 
+    setShowCommentInput((prev) => ({
+      ...prev,
+      [postId]: !prev[postId],
     }));
   };
 
@@ -189,9 +189,9 @@ const SocialHome = () => {
 
   // Check if current user has liked a post
   const hasLikedPost = (post) => {
-    return post.likes?.some(like => like === authUser?._id);
+    return post.likes?.some((like) => like === authUser?._id);
   };
-  
+
   // Load more posts when user scrolls to bottom
   const handleLoadMorePosts = () => {
     if (pagination.currentPage < pagination.totalPages && !isLoading) {
@@ -219,11 +219,9 @@ const SocialHome = () => {
             </button>
             <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
               <img
-                src={
-                  authUser?.profilePic || "/placeholder.svg?height=50&width=50"
-                }
+                src={authUser?.profilePic || "/avatar.png"}
                 alt="Profile"
-                className="w-full"
+                className="w-full h-full rounded-full object-cover"
               />
             </div>
           </div>
@@ -238,12 +236,9 @@ const SocialHome = () => {
             <div className="p-4 bg-white rounded-lg flex items-center gap-4 max-lg:hidden">
               <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
                 <img
-                  src={
-                    authUser?.profilePic ||
-                    "/placeholder.svg?height=50&width=50"
-                  }
+                  src={authUser?.profilePic || "/avatar.png"}
                   alt="Profile"
-                  className="w-full"
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div>
@@ -353,7 +348,7 @@ const SocialHome = () => {
           {/* MIDDLE CONTENT */}
           <div className="max-md:col-span-2 max-md:col-start-1">
             {/* STORIES */}
-            <div className="flex justify-between h-48 gap-2">
+            {/* <div className="flex justify-between h-48 gap-2">
               {[1, 2, 3, 4, 5, 6].map((item, index) => (
                 <div
                   key={index}
@@ -375,17 +370,20 @@ const SocialHome = () => {
                   </p>
                 </div>
               ))}
-            </div>
+            </div> */}
 
             {/* CREATE POST */}
-            <form onSubmit={handleCreatePost} className="mt-4 bg-white p-4 rounded-lg shadow-sm">
+            <form
+              onSubmit={handleCreatePost}
+              className="mt-4 bg-white p-4 rounded-lg shadow-sm"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 w-full">
                   <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
                     <img
-                      src={authUser?.profilePic || "/placeholder.svg?height=50&width=50"}
+                      src={authUser?.profilePic || "/avatar.png"}
                       alt="Profile"
-                      className="w-full"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <input
@@ -397,12 +395,12 @@ const SocialHome = () => {
                   />
                 </div>
               </div>
-              
+
               {imagePreview && (
                 <div className="mt-3 relative">
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
                     className="max-h-60 rounded-lg object-contain mx-auto"
                   />
                   <button
@@ -414,10 +412,10 @@ const SocialHome = () => {
                   </button>
                 </div>
               )}
-              
+
               <div className="mt-3 flex justify-between items-center">
                 <div className="flex gap-3">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="flex items-center gap-2 text-gray-600 hover:text-purple-500 transition-colors"
@@ -433,8 +431,8 @@ const SocialHome = () => {
                     className="hidden"
                   />
                 </div>
-                
-                <button 
+
+                <button
                   type="submit"
                   className="bg-purple-500 text-white py-2 px-6 rounded-full font-medium text-sm hover:opacity-80 transition-all disabled:opacity-50"
                   disabled={isCreatingPost || (!postText.trim() && !postImage)}
@@ -459,30 +457,39 @@ const SocialHome = () => {
                 </div>
               ) : posts.length === 0 ? (
                 <div className="bg-white rounded-lg p-8 text-center">
-                  <p className="text-gray-500">No posts yet. Be the first to share something!</p>
+                  <p className="text-gray-500">
+                    No posts yet. Be the first to share something!
+                  </p>
                 </div>
               ) : (
                 <>
                   {posts.map((post) => (
-                    <div key={post._id} className="bg-white rounded-lg p-4 text-sm">
+                    <div
+                      key={post._id}
+                      className="bg-white rounded-lg p-4 text-sm"
+                    >
                       {/* Post header */}
                       <div className="flex justify-between">
                         <div className="flex gap-4">
                           <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
                             <img
-                              src={post.userId?.profilePic || "/placeholder.svg?height=50&width=50"}
+                              src={post.userId?.profilePic || "/avatar.png"}
                               alt="Profile"
-                              className="w-full"
+                              className="w-full h-full object-cover"
                             />
                           </div>
                           <div>
-                            <h3 className="font-medium">{post.userId?.fullName}</h3>
-                            <small className="text-gray-500">{formatDate(post.createdAt)}</small>
+                            <h3 className="font-medium">
+                              {post.userId?.fullName}
+                            </h3>
+                            <small className="text-gray-500">
+                              {formatDate(post.createdAt)}
+                            </small>
                           </div>
                         </div>
                         <div className="flex gap-2">
                           {post.userId?._id === authUser?._id && (
-                            <button 
+                            <button
                               onClick={() => handleDeletePost(post._id)}
                               className="text-gray-500 hover:text-red-500"
                             >
@@ -501,7 +508,7 @@ const SocialHome = () => {
                           <p>{post.text}</p>
                         </div>
                       )}
-                      
+
                       {/* Post image */}
                       {post.image && (
                         <div className="rounded-lg overflow-hidden my-3">
@@ -516,13 +523,17 @@ const SocialHome = () => {
                       {/* Action buttons */}
                       <div className="flex justify-between items-center text-xl my-2">
                         <div className="flex gap-4">
-                          <button 
+                          <button
                             onClick={() => handleLikePost(post._id)}
-                            className={`cursor-pointer ${hasLikedPost(post) ? 'text-purple-500' : 'text-gray-500'}`}
+                            className={`cursor-pointer ${
+                              hasLikedPost(post)
+                                ? "text-purple-500"
+                                : "text-gray-500"
+                            }`}
                           >
                             <ThumbsUp className="w-5 h-5" />
                           </button>
-                          <button 
+                          <button
                             onClick={() => toggleCommentInput(post._id)}
                             className="cursor-pointer text-gray-500 hover:text-purple-500"
                           >
@@ -545,7 +556,9 @@ const SocialHome = () => {
                               </div>
                             </div>
                             <p className="ml-2">
-                              {post.likes?.length} {post.likes?.length === 1 ? 'person' : 'people'} liked this
+                              {post.likes?.length}{" "}
+                              {post.likes?.length === 1 ? "person" : "people"}{" "}
+                              liked this
                             </p>
                           </>
                         )}
@@ -554,42 +567,61 @@ const SocialHome = () => {
                       {/* Comments */}
                       {post.comments?.length > 0 && (
                         <div className="mt-2">
-                          <p 
-                            className="text-gray-500 cursor-pointer hover:text-purple-500"
-                          >
+                          <p className="text-gray-500 cursor-pointer hover:text-purple-500">
                             View all {post.comments.length} comments
                           </p>
-                          
+
                           {/* Show the latest comment */}
                           {post.comments.length > 0 && (
                             <div className="mt-2 bg-gray-50 p-2 rounded-lg">
                               <div className="flex items-start gap-2">
                                 <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
                                   <img
-                                    src={post.comments[post.comments.length - 1]?.userId?.profilePic || "/placeholder.svg?height=30&width=30"}
+                                    src={
+                                      post.comments[post.comments.length - 1]
+                                        ?.userId?.profilePic || "/avatar.png"
+                                    }
                                     alt="Profile"
-                                    className="w-full"
+                                    className="w-full h-full object-cover"
                                   />
                                 </div>
                                 <div>
                                   <p>
-                                    <span className="font-semibold">{post.comments[post.comments.length - 1]?.userId?.fullName}</span>
-                                    <span className="ml-2">{post.comments[post.comments.length - 1]?.text}</span>
+                                    <span className="font-semibold">
+                                      {
+                                        post.comments[post.comments.length - 1]
+                                          ?.userId?.fullName
+                                      }
+                                    </span>
+                                    <span className="ml-2">
+                                      {
+                                        post.comments[post.comments.length - 1]
+                                          ?.text
+                                      }
+                                    </span>
                                   </p>
-                                  <small className="text-gray-500">{formatDate(post.comments[post.comments.length - 1]?.createdAt)}</small>
+                                  <small className="text-gray-500">
+                                    {formatDate(
+                                      post.comments[post.comments.length - 1]
+                                        ?.createdAt
+                                    )}
+                                  </small>
                                 </div>
                               </div>
                             </div>
                           )}
                         </div>
                       )}
-                      
+
                       {/* Comment input */}
                       {showCommentInput[post._id] && (
                         <div className="mt-3 flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                             <img
-                              src={authUser?.profilePic || "/placeholder.svg?height=40&width=40"}
+                              src={
+                                authUser?.profilePic ||
+                                "/placeholder.svg?height=40&width=40"
+                              }
                               alt="Profile"
                               className="w-full"
                             />
@@ -598,10 +630,15 @@ const SocialHome = () => {
                             type="text"
                             placeholder="Write a comment..."
                             className="flex-grow bg-gray-100 rounded-full py-2 px-4 focus:outline-none text-sm"
-                            value={commentText[post._id] || ''}
-                            onChange={(e) => setCommentText({...commentText, [post._id]: e.target.value})}
+                            value={commentText[post._id] || ""}
+                            onChange={(e) =>
+                              setCommentText({
+                                ...commentText,
+                                [post._id]: e.target.value,
+                              })
+                            }
                           />
-                          <button 
+                          <button
                             onClick={() => handleAddComment(post._id)}
                             className="bg-purple-500 text-white rounded-full p-2"
                           >
@@ -611,11 +648,11 @@ const SocialHome = () => {
                       )}
                     </div>
                   ))}
-                  
+
                   {/* Load more button */}
                   {pagination.currentPage < pagination.totalPages && (
                     <div className="flex justify-center py-4">
-                      <button 
+                      <button
                         onClick={handleLoadMorePosts}
                         className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-6 rounded-full font-medium text-sm transition-all disabled:opacity-50"
                         disabled={isLoading}
@@ -680,10 +717,7 @@ const SocialHome = () => {
                     <div className="relative">
                       <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
                         <img
-                          src={
-                            user.profilePic ||
-                            "/placeholder.svg?height=50&width=50"
-                          }
+                          src={user.profilePic || "/avatar.png"}
                           alt="Profile"
                           className="w-full rounded-full"
                         />
