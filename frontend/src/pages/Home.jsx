@@ -50,6 +50,7 @@ const SocialHome = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [showCommentInput, setShowCommentInput] = useState({});
   const [commentText, setCommentText] = useState({});
+  const [showAllComments, setShowAllComments] = useState({});
   const fileInputRef = useRef(null);
 
   // Fetch users, ensure socket connection, and load posts when component mounts
@@ -146,6 +147,13 @@ const SocialHome = () => {
     }));
   };
 
+  // Handle showing/hiding all comments
+  const toggleAllComments = (postId) => {
+    setShowAllComments((prev) => ({
+      ...prev,
+      [postId]: !prev[postId],
+    }));
+  };
   // Format date for display
   const formatDate = (date) => {
     return formatDistanceToNow(new Date(date), { addSuffix: true });
@@ -563,12 +571,53 @@ const SocialHome = () => {
                       {/* Comments */}
                       {post.comments?.length > 0 && (
                         <div className="mt-2">
-                          <p className="text-gray-500 cursor-pointer hover:text-purple-500">
-                            View all {post.comments.length} comments
+                          <p
+                            className="text-gray-500 cursor-pointer hover:text-purple-500"
+                            onClick={() => toggleAllComments(post._id)}
+                          >
+                            {showAllComments[post._id]
+                              ? "Hide comments"
+                              : `View all ${post.comments.length} comments`}
                           </p>
 
-                          {/* Show the latest comment */}
-                          {post.comments.length > 0 && (
+                          {showAllComments[post._id] ? (
+                            // Show all comments when expanded
+                            <div className="mt-2 space-y-2">
+                              {post.comments.map((comment, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-gray-50 p-2 rounded-lg"
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                                      <img
+                                        src={
+                                          comment.userId?.profilePic ||
+                                          "/avatar.png"
+                                        }
+                                        alt="Profile"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <div>
+                                      <p>
+                                        <span className="font-semibold">
+                                          {comment.userId?.fullName}
+                                        </span>
+                                        <span className="ml-2">
+                                          {comment.text}
+                                        </span>
+                                      </p>
+                                      <small className="text-gray-500">
+                                        {formatDate(comment.createdAt)}
+                                      </small>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            // Show only the latest comment when not expanded
                             <div className="mt-2 bg-gray-50 p-2 rounded-lg">
                               <div className="flex items-start gap-2">
                                 <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
@@ -608,7 +657,6 @@ const SocialHome = () => {
                           )}
                         </div>
                       )}
-
                       {/* Comment input */}
                       {showCommentInput[post._id] && (
                         <div className="mt-3 flex items-center gap-2">
