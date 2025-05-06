@@ -232,7 +232,7 @@ const SocialHome = () => {
       <main className="relative top-[5.4rem]">
         <div className="w-[80%] mx-auto grid grid-cols-[18vw_auto_20vw] gap-8 relative max-lg:grid-cols-[5rem_auto_30vw] max-md:grid-cols-[0_auto_5rem]">
           {/* LEFT SIDEBAR */}
-          <div className="h-max sticky top-[5.4rem] max-md:fixed max-md:bottom-0 max-md:right-0 max-md:top-auto z-5">
+          <div className="h-max sticky top-[1rem] max-md:fixed max-md:bottom-0 max-md:right-10 max-md:top-21 max-md:w-16 z-5">
             <div className="p-4 bg-white rounded-lg flex items-center gap-4 max-lg:hidden">
               <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
                 <img
@@ -251,8 +251,8 @@ const SocialHome = () => {
             {/* SIDEBAR MENU */}
             <div className="mt-4 bg-white rounded-lg">
               <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100 bg-gray-100 rounded-tl-lg overflow-hidden">
-                <span className="before:content-[''] before:block before:w-2 before:h-full before:absolute before:bg-purple-500">
-                  <Home className="text-purple-500 text-[1.4rem] ml-4 relative" />
+                <span className="before:content-[''] before:block before:w-2 before:h-full before:rounded-tl-md before:absolute before:bg-purple-500 h-full">
+                  <Home className="mt-4 text-purple-500 text-[1.4rem] ml-4 relative" />
                 </span>
                 <h3 className="ml-4 text-purple-500 max-lg:hidden">Home</h3>
               </a>
@@ -339,10 +339,6 @@ const SocialHome = () => {
                 <h3 className="ml-4 max-lg:hidden">Settings</h3>
               </a>
             </div>
-
-            <button className="bg-purple-500 text-white py-4 px-8 rounded-full font-medium text-sm hover:opacity-80 transition-all w-full text-center mt-4 max-lg:hidden">
-              Create Post
-            </button>
           </div>
 
           {/* MIDDLE CONTENT */}
@@ -549,9 +545,9 @@ const SocialHome = () => {
                             <div className="flex">
                               <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-white">
                                 <img
-                                  src="/placeholder.svg?height=30&width=30"
+                                  src={authUser?.profilePic || "/avatar.png"}
                                   alt="Profile"
-                                  className="w-full"
+                                  className="w-full h-full object-cover"
                                 />
                               </div>
                             </div>
@@ -618,12 +614,9 @@ const SocialHome = () => {
                         <div className="mt-3 flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                             <img
-                              src={
-                                authUser?.profilePic ||
-                                "/placeholder.svg?height=40&width=40"
-                              }
+                              src={authUser?.profilePic || "/avatar.png"}
                               alt="Profile"
-                              className="w-full"
+                              className="w-full h-full object-cover"
                             />
                           </div>
                           <input
@@ -719,7 +712,7 @@ const SocialHome = () => {
                         <img
                           src={user.profilePic || "/avatar.png"}
                           alt="Profile"
-                          className="w-full rounded-full"
+                          className="w-full h-full rounded-full object-cover"
                         />
                       </div>
                       {isUserOnline(user._id) && (
