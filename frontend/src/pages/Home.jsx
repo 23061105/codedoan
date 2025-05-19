@@ -209,39 +209,15 @@ const SocialHome = () => {
 
   return (
     <>
-      {/* NAVBAR */}
-      <nav className="w-full bg-white py-3 fixed top-0 z-10">
-        <div className="w-[80%] mx-auto flex items-center justify-between">
-          <h2 className="font-bold text-xl">nokoSocial</h2>
-          <div className="bg-gray-100 rounded-full py-2 px-4 hidden md:flex items-center">
-            <Search className="w-5 h-5 text-gray-500" />
-            <input
-              type="search"
-              placeholder="Search for creators, inspirations, and projects"
-              className="bg-transparent w-[30vw] ml-4 text-sm text-gray-800 focus:outline-none"
-            />
-          </div>
-          <div className="flex items-center gap-8">
-            <button className="bg-purple-500 text-white py-2 px-8 rounded-full font-medium text-sm hover:opacity-80 transition-all">
-              Create
-            </button>
-            <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-              <img
-                src={authUser?.profilePic || "/avatar.png"}
-                alt="Profile"
-                className="w-full h-full rounded-full object-cover"
-              />
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* MAIN CONTENT */}
-      <main className="relative top-[5.4rem]">
+      <main className="relative top-[5.4rem] bg-base-100">
         <div className="w-[80%] mx-auto grid grid-cols-[18vw_auto_20vw] gap-8 relative max-lg:grid-cols-[5rem_auto_30vw] max-md:grid-cols-[0_auto_5rem]">
           {/* LEFT SIDEBAR */}
           <div className="h-max sticky top-[1rem] max-md:fixed max-md:bottom-0 max-md:right-10 max-md:top-21 max-md:w-16 z-5">
-            <div className="p-4 bg-white rounded-lg flex items-center gap-4 max-lg:hidden">
+            <Link
+              to={"/profile"}
+              className="p-4 bg-base-100 dark:bg-gray-900 rounded-lg flex items-center gap-4 max-lg:hidden shadow-sm"
+            >
               <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
                 <img
                   src={authUser?.profilePic || "/avatar.png"}
@@ -251,13 +227,13 @@ const SocialHome = () => {
               </div>
               <div>
                 <h4 className="font-medium">{authUser?.fullName || "User"}</h4>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-400 text-sm">
                   @{authUser?.email?.split("@")[0] || "user"}
                 </p>
               </div>
-            </div>
+            </Link>
             {/* SIDEBAR MENU */}
-            <div className="mt-4 bg-white rounded-lg">
+            <div className="mt-4 bg-base-100 dark:bg-gray-900 rounded-lg shadow-sm">
               <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100 bg-gray-100 rounded-tl-lg overflow-hidden">
                 <span className="before:content-[''] before:block before:w-2 before:h-full before:rounded-tl-md before:absolute before:bg-purple-500 h-full">
                   <Home className="mt-4 text-purple-500 text-[1.4rem] ml-4 relative" />
@@ -454,7 +430,13 @@ const SocialHome = () => {
             </form>
 
             {/* FEEDS */}
-            <div className="mt-4 space-y-4">
+            <div
+              className="h-114 mt-4 space-y-4 overflow-y-scroll "
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
+            >
               {isLoading && posts.length === 0 ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
@@ -470,7 +452,7 @@ const SocialHome = () => {
                   {posts.map((post) => (
                     <div
                       key={post._id}
-                      className="bg-white rounded-lg p-4 text-sm"
+                      className="bg-white rounded-lg p-4 text-sm shadow-md"
                     >
                       {/* Post header */}
                       <div className="flex justify-between">
@@ -483,7 +465,7 @@ const SocialHome = () => {
                             />
                           </div>
                           <div>
-                            <h3 className="font-medium">
+                            <h3 className="font-medium text-base-content">
                               {post.userId?.fullName}
                             </h3>
                             <small className="text-gray-500">
