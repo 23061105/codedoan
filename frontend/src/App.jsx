@@ -13,6 +13,7 @@ import { useAuthStore } from "./store/useAuthStore";
 import { useEffect } from "react";
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
+import Notifications from "./Components/Notifications";
 
 function App() {
   // const [count, setCount] = useState(0);
@@ -72,6 +73,7 @@ function App() {
           </>
         )}
       </Routes>
+     {/* <Notifications /> */}
       <Toaster />
     </>
   );

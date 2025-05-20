@@ -6,6 +6,9 @@ import { io } from "socket.io-client";
 const BASE_URL =
   import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
 
+// 🚀 Lấy danh sách thông báo từ localStorage
+const savedNotifications = JSON.parse(localStorage.getItem("notifications") || "[]");
+
 export const useAuthStore = create((set, get) => ({
   authUser: null,
   isSigningUp: false,
@@ -15,10 +18,38 @@ export const useAuthStore = create((set, get) => ({
   onlineUsers: [],
   socket: null,
 
+  notifications: savedNotifications,
+
+  //Thêm thông báo mới (tránh trùng), lưu vào localStorage, hiển thị toast
+  addNotification: (notif) => {
+    const existing = get().notifications;
+
+    const alreadyExists = existing.some(
+      (n) =>
+        n.message === notif.message &&
+        Math.abs(new Date(n.time) - new Date(notif.time)) < 2000
+    );
+
+    if (alreadyExists) return;
+
+    const updated = [...existing, notif];
+    localStorage.setItem("notifications", JSON.stringify(updated));
+    set({ notifications: updated });
+
+    toast(notif.message, {
+      duration: 4000, // toast tự tắt sau 4 giây
+    });
+  },
+
+  removeNotification: (index) => {
+    const updated = get().notifications.filter((_, i) => i !== index);
+    localStorage.setItem("notifications", JSON.stringify(updated));
+    set({ notifications: updated });
+  },
+
   checkAuth: async () => {
     try {
       const res = await axiosInstance.get("/auth/check");
-      //Thiết lập trạng thái người dùng
       set({ authUser: res.data });
       get().connectSocket();
     } catch (error) {
@@ -35,7 +66,6 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/signup", data);
       set({ authUser: res.data });
       toast.success("Account created successfully");
-      // await get().checkAuth();
       get().connectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
@@ -50,7 +80,6 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/login", data);
       set({ authUser: res.data });
       toast.success("Logged in successfully");
-
       get().connectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
@@ -62,9 +91,9 @@ export const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
+      get().disconnectSocket();
       set({ authUser: null });
       toast.success("Logged out successfully");
-      get().disconnectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
     }
@@ -83,24 +112,47 @@ export const useAuthStore = create((set, get) => ({
       set({ isUpdatingProfile: false });
     }
   },
+
   connectSocket: () => {
-    const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    const { authUser, socket: existingSocket } = get();
 
-    const socket = io(BASE_URL, {
-      query: {
-        userId: authUser._id,
-      },
-    });
-    socket.connect();
+    if (!authUser) return;
 
-    set({ socket: socket });
+    // ❌ Ngắt kết nối socket cũ và gỡ toàn bộ listener để tránh trùng
+    if (existingSocket) {
+      existingSocket.removeAllListeners();
+      existingSocket.disconnect();
+    }
+
+    const socket = io(BASE_URL, { query: { userId: authUser._id } });
+    set({ socket });
 
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
+
+    socket.on("postLiked", ({ userName }) => {
+      get().addNotification({
+        message: `${userName} đã thích bài viết của bạn`,
+        time: new Date().toISOString(),
+        type: "like",
+      });
+    });
+
+    socket.on("postCommented", ({ userName }) => {
+      get().addNotification({
+        message: `${userName} đã bình luận bài viết của bạn`,
+        time: new Date().toISOString(),
+        type: "comment",
+      });
+    });
   },
+
   disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
+    const socket = get().socket;
+    if (socket?.connected) {
+      socket.removeAllListeners();
+      socket.disconnect();
+    }
   },
 }));

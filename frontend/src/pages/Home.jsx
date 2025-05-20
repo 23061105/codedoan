@@ -30,7 +30,7 @@ const SocialHome = () => {
   // Quản lý hiển thị popup và lưu thông tin cuộc hội thoại được chọn
   const [showMessagePopup, setShowMessagePopup] = useState(false);
   const { users, getUsers, isUsersLoading, setSelectedUser } = useChatStore();
-  const { authUser, onlineUsers, connectSocket } = useAuthStore();
+  const { authUser, onlineUsers, connectSocket, notifications } = useAuthStore();
   const {
     posts,
     getPosts,
@@ -52,6 +52,8 @@ const SocialHome = () => {
   const [commentText, setCommentText] = useState({});
   const [showAllComments, setShowAllComments] = useState({});
   const fileInputRef = useRef(null);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+
 
   // Fetch users, ensure socket connection, and load posts when component mounts
   useEffect(() => {
@@ -114,6 +116,33 @@ const SocialHome = () => {
       }
     }
   };
+useEffect(() => {
+  const socket = useAuthStore.getState().socket;
+  const { addNotification } = useAuthStore.getState();
+
+  if (socket) {
+    socket.on("postLiked", ({ userName }) => {
+      addNotification({
+        message: `${userName} đã thích bài viết của bạn`,
+        time: new Date().toISOString(),
+        type: "like",
+      });
+    });
+
+    socket.on("postCommented", ({ userName }) => {
+      addNotification({
+        message: `${userName} đã bình luận bài viết của bạn`,
+        time: new Date().toISOString(),
+        type: "comment",
+      });
+    });
+
+    return () => {
+      socket.off("postLiked");
+      socket.off("postCommented");
+    };
+  }
+}, []);
 
   // Handle liking a post
   const handleLikePost = async (postId) => {
@@ -246,38 +275,49 @@ const SocialHome = () => {
                 </span>
                 <h3 className="ml-4 max-lg:hidden">Explore</h3>
               </a>
-              <a
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-                id="notifications"
-              >
-                <span className="relative">
-                  <Bell className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                  <small className="bg-red-500 text-white text-[0.7rem] w-fit rounded-full px-1.5 py-0.5 absolute -top-1 -right-1">
-                    9+
-                  </small>
-                </span>
-                <h3 className="ml-4 max-lg:hidden">Notifications</h3>
-                {/* Popup thông báo (ẩn mặc định) */}
-                <div className="absolute top-0 left-[110%] w-[30rem] bg-white rounded-lg p-4 shadow-lg z-8 hidden max-md:left-[-20rem] max-md:w-[20rem]">
-                  {[1, 2, 3, 4, 5].map((item, index) => (
-                    <div key={index} className="flex items-start gap-4 mb-4">
-                      <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                        <img
-                          src={`/placeholder.svg?height=50&width=50&text=${item}`}
-                          alt="Profile"
-                          className="w-full"
-                        />
-                      </div>
-                      <div>
-                        <b>KeKe Benjamin</b> accepted your friend request
-                        <small className="text-gray-500 block">
-                          2 DAYS AGO
-                        </small>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </a>
+              <div
+  className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
+  onClick={() => setShowNotificationPopup(!showNotificationPopup)}
+>
+  <span className="relative">
+    <Bell className="text-gray-500 text-[1.4rem] ml-4 relative" />
+    <small className="bg-red-500 text-white text-[0.7rem] w-fit rounded-full px-1.5 py-0.5 absolute -top-1 -right-1">
+      9+
+    </small>
+  </span>
+  <h3 className="ml-4 max-lg:hidden">Notifications</h3>
+
+  {/* Popup thông báo - toggle hiển thị bằng showNotificationPopup */}
+{showNotificationPopup && (
+  <div className="absolute top-0 left-[110%] w-[30rem] bg-white rounded-lg p-4 shadow-lg z-10 max-md:left-[-20rem] max-md:w-[20rem]">
+    {notifications.length === 0 ? (
+      <p className="text-gray-500">Không có thông báo nào</p>
+    ) : (
+      notifications
+        .slice() // clone
+        .reverse() // hiển thị mới nhất lên đầu
+        .map((notif, index) => (
+          <div key={index} className="flex items-start gap-4 mb-4">
+            <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+              <img
+                src="/avatar.png"
+                alt="Profile"
+                className="w-full"
+              />
+            </div>
+            <div>
+              <b>{notif.message}</b>
+              <small className="text-gray-500 block">
+                {formatDate(notif.time)}
+              </small>
+            </div>
+          </div>
+        ))
+    )}
+  </div>
+)}
+</div>
+
 
               <Link
                 to="/message"
