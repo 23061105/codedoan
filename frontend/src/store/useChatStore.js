@@ -23,7 +23,21 @@ export const useChatStore = create((set, get) => ({
       set({ isUsersLoading: false });
     }
   },
+  deleteUser: async (userId) => {
+    try {
+      console.log("Deleting user with id:", userId);
+      await axiosInstance.delete(`/messages/${userId}`);
 
+      // Remove post from state
+      const res = await axiosInstance.get("/messages/users");
+      set({ users: res.data });
+
+      toast.success("Delete user successfully!");
+    } catch (error) {
+      console.log("error in delete user:", error);
+      toast.error("Bị lỗi r cha nội");
+    }
+  },
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });
     try {

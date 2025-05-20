@@ -104,8 +104,7 @@ export const likePost = async (req, res) => {
     }
 
     await post.save();
-
-    if (post.userId.toString() !== userId.toString()) {
+      if (post.userId.toString() !== userId.toString()) {
   const receiverSocketId = getReceiverSocketId(post.userId.toString());
   if (receiverSocketId) {
     io.to(receiverSocketId).emit("postLiked", {
@@ -149,7 +148,7 @@ export const addComment = async (req, res) => {
 
     post.comments.push(newComment);
     await post.save();
-      if (post.userId.toString() !== userId.toString()) {
+         if (post.userId.toString() !== userId.toString()) {
   const receiverSocketId = getReceiverSocketId(post.userId.toString());
   if (receiverSocketId) {
     io.to(receiverSocketId).emit("postCommented", {

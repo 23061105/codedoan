@@ -30,7 +30,7 @@ const SocialHome = () => {
   // Quản lý hiển thị popup và lưu thông tin cuộc hội thoại được chọn
   const [showMessagePopup, setShowMessagePopup] = useState(false);
   const { users, getUsers, isUsersLoading, setSelectedUser } = useChatStore();
-  const { authUser, onlineUsers, connectSocket, notifications } = useAuthStore();
+   const { authUser, onlineUsers, connectSocket, notifications } = useAuthStore();
   const {
     posts,
     getPosts,
@@ -53,8 +53,6 @@ const SocialHome = () => {
   const [showAllComments, setShowAllComments] = useState({});
   const fileInputRef = useRef(null);
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
-
-
   // Fetch users, ensure socket connection, and load posts when component mounts
   useEffect(() => {
     getUsers();
@@ -143,7 +141,6 @@ useEffect(() => {
     };
   }
 }, []);
-
   // Handle liking a post
   const handleLikePost = async (postId) => {
     await likePost(postId);
@@ -287,36 +284,36 @@ useEffect(() => {
   </span>
   <h3 className="ml-4 max-lg:hidden">Notifications</h3>
 
-  {/* Popup thông báo - toggle hiển thị bằng showNotificationPopup */}
-{showNotificationPopup && (
-  <div className="absolute top-0 left-[110%] w-[30rem] bg-white rounded-lg p-4 shadow-lg z-10 max-md:left-[-20rem] max-md:w-[20rem]">
-    {notifications.length === 0 ? (
-      <p className="text-gray-500">Không có thông báo nào</p>
-    ) : (
-      notifications
-        .slice() // clone
-        .reverse() // hiển thị mới nhất lên đầu
-        .map((notif, index) => (
-          <div key={index} className="flex items-start gap-4 mb-4">
-            <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-              <img
-                src="/avatar.png"
-                alt="Profile"
-                className="w-full"
-              />
-            </div>
-            <div>
-              <b>{notif.message}</b>
-              <small className="text-gray-500 block">
-                {formatDate(notif.time)}
-              </small>
-            </div>
-          </div>
-        ))
-    )}
-  </div>
-)}
-</div>
+        {/* Popup thông báo - toggle hiển thị bằng showNotificationPopup */}
+      {showNotificationPopup && (
+        <div className="absolute top-0 left-[110%] w-[30rem] bg-white rounded-lg p-4 shadow-lg z-10 max-md:left-[-20rem] max-md:w-[20rem]">
+          {notifications.length === 0 ? (
+            <p className="text-gray-500">Không có thông báo nào</p>
+          ) : (
+            notifications
+              .slice() // clone
+              .reverse() // hiển thị mới nhất lên đầu
+              .map((notif, index) => (
+                <div key={index} className="flex items-start gap-4 mb-4">
+                  <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                    <img
+                      src="/avatar.png"
+                      alt="Profile"
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <b>{notif.message}</b>
+                    <small className="text-gray-500 block">
+                      {formatDate(notif.time)}
+                    </small>
+                  </div>
+                </div>
+              ))
+          )}
+        </div>
+      )}
+      </div>
 
 
               <Link
@@ -367,31 +364,6 @@ useEffect(() => {
 
           {/* MIDDLE CONTENT */}
           <div className="max-md:col-span-2 max-md:col-start-1">
-            {/* STORIES */}
-            {/* <div className="flex justify-between h-48 gap-2">
-              {[1, 2, 3, 4, 5, 6].map((item, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-lg flex flex-col justify-between items-center text-white text-xs w-full relative overflow-hidden bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url('/placeholder.svg?height=200&width=150&text=Story ${item}')`,
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent h-20 bottom-0 w-full"></div>
-                  <div className="w-8 h-8 rounded-full border-2 border-purple-500 self-start z-10">
-                    <img
-                      src={`/placeholder.svg?height=30&width=30&text=${item}`}
-                      alt="Profile"
-                      className="w-full rounded-full"
-                    />
-                  </div>
-                  <p className="z-10">
-                    {index === 0 ? "Your story" : `Story ${item}`}
-                  </p>
-                </div>
-              ))}
-            </div> */}
-
             {/* CREATE POST */}
             <form
               onSubmit={handleCreatePost}
