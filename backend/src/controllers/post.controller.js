@@ -113,6 +113,7 @@ export const likePost = async (req, res) => {
     });
   }
 }
+
     res.status(200).json({
       liked: !isLiked,
       likesCount: post.likes.length,
