@@ -25,7 +25,6 @@ export const protectRoute = async (req, res, next) => {
     }
     //Quan trọng: sau khi kiểm tra thì user sẽ đc gán vào req, route tiếp theo sẽ biết req.user là ai
     req.user = user;
-
     next();
   } catch (error) {
     console.log("Error in protectRoute middleware: ", error.message);

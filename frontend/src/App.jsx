@@ -7,6 +7,7 @@ import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
 import Navbar from "./components/Navbar";
 import ProfilePage from "./pages/ProfilePage";
+import AdminPage from "./pages/AdminPage";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { useEffect } from "react";
@@ -29,29 +30,47 @@ function App() {
         <Loader className="size-10 animate-spin" />
       </div>
     );
-
   return (
     <>
+      {/* Unauthorized */}
       <Navbar />
       <Routes>
         <Route
-          path="/"
-          element={authUser ? <Home /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/signup"
-          element={!authUser ? <SignUpPage /> : <Navigate to="/" />}
-        />
-        <Route
           path="/login"
           element={!authUser ? <LoginPage /> : <Navigate to="/" />}
-        />
-
-        <Route path="/message" element={<HomePage />} />
+        ></Route>
         <Route
-          path="/profile"
-          element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
-        />
+          path="/signup"
+          element={!authUser ? <SignUpPage /> : <Navigate to="/login" />}
+        ></Route>
+        {authUser?.role === "user" ? (
+          <>
+            <Route
+              path="/"
+              element={authUser ? <Home /> : <Navigate to="/login" />}
+            ></Route>
+            <Route
+              path="/profile"
+              element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+            ></Route>
+            <Route
+              path="/message"
+              element={authUser ? <HomePage /> : <Navigate to="/login" />}
+            ></Route>
+
+            <Route path="/admin" element={<Navigate to="/" />}></Route>
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<Navigate to="/admin" />}></Route>
+            <Route
+              path="/admin"
+              element={authUser ? <AdminPage /> : <Navigate to="/login" />}
+            ></Route>
+            <Route path="/profile" element={<Navigate to="/admin" />}></Route>
+            <Route path="/message" element={<Navigate to="/admin" />}></Route>
+          </>
+        )}
       </Routes>
       <Toaster />
     </>

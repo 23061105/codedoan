@@ -10,21 +10,21 @@ export const usePostStore = create((set, get) => ({
   pagination: {
     currentPage: 1,
     totalPages: 1,
-    totalPosts: 0
+    totalPosts: 0,
   },
-  
+
   // Get posts with pagination
   getPosts: async (page = 1, limit = 10) => {
     set({ isLoading: true });
     try {
       const res = await axiosInstance.get(`/posts?page=${page}&limit=${limit}`);
-      set({ 
-        posts: res.data.posts, 
+      set({
+        posts: res.data.posts,
         pagination: {
           currentPage: res.data.currentPage,
           totalPages: res.data.totalPages,
-          totalPosts: res.data.totalPosts
-        }
+          totalPosts: res.data.totalPosts,
+        },
       });
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -39,12 +39,12 @@ export const usePostStore = create((set, get) => ({
     set({ isCreatingPost: true });
     try {
       const res = await axiosInstance.post("/posts/create", postData);
-      set(state => ({ 
+      set((state) => ({
         posts: [res.data, ...state.posts],
         pagination: {
           ...state.pagination,
-          totalPosts: state.pagination.totalPosts + 1
-        }
+          totalPosts: state.pagination.totalPosts + 1,
+        },
       }));
       toast.success("Post created successfully");
       return res.data;
@@ -62,21 +62,21 @@ export const usePostStore = create((set, get) => ({
     try {
       const res = await axiosInstance.put(`/posts/like/${postId}`);
       const authUser = useAuthStore.getState().authUser;
-      
+
       // Update post in state
-      set(state => ({
-        posts: state.posts.map(post => 
-          post._id === postId 
-            ? { 
-                ...post, 
-                likes: res.data.liked 
-                  ? [...post.likes, authUser?._id] 
-                  : post.likes.filter(id => id !== authUser?._id)
+      set((state) => ({
+        posts: state.posts.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                likes: res.data.liked
+                  ? [...post.likes, authUser?._id]
+                  : post.likes.filter((id) => id !== authUser?._id),
               }
             : post
-        )
+        ),
       }));
-      
+
       return res.data;
     } catch (error) {
       console.error("Error liking post:", error);
@@ -87,17 +87,19 @@ export const usePostStore = create((set, get) => ({
   // Add a comment to a post
   addComment: async (postId, text) => {
     try {
-      const res = await axiosInstance.post(`/posts/comment/${postId}`, { text });
-      
+      const res = await axiosInstance.post(`/posts/comment/${postId}`, {
+        text,
+      });
+
       // Update post in state
-      set(state => ({
-        posts: state.posts.map(post => 
-          post._id === postId 
+      set((state) => ({
+        posts: state.posts.map((post) =>
+          post._id === postId
             ? { ...post, comments: [...post.comments, res.data] }
             : post
-        )
+        ),
       }));
-      
+
       return res.data;
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -107,18 +109,19 @@ export const usePostStore = create((set, get) => ({
 
   // Delete a post
   deletePost: async (postId) => {
+    console.log(`/posts/${postId}`);
     try {
       await axiosInstance.delete(`/posts/${postId}`);
-      
+
       // Remove post from state
-      set(state => ({
-        posts: state.posts.filter(post => post._id !== postId),
+      set((state) => ({
+        posts: state.posts.filter((post) => post._id !== postId),
         pagination: {
           ...state.pagination,
-          totalPosts: state.pagination.totalPosts - 1
-        }
+          totalPosts: state.pagination.totalPosts - 1,
+        },
       }));
-      
+
       toast.success("Post deleted successfully");
       return true;
     } catch (error) {
@@ -132,19 +135,19 @@ export const usePostStore = create((set, get) => ({
   loadMorePosts: async () => {
     const { pagination } = get();
     if (pagination.currentPage >= pagination.totalPages) return;
-    
+
     const nextPage = pagination.currentPage + 1;
     set({ isLoading: true });
-    
+
     try {
       const res = await axiosInstance.get(`/posts?page=${nextPage}&limit=10`);
-      set(state => ({ 
-        posts: [...state.posts, ...res.data.posts], 
+      set((state) => ({
+        posts: [...state.posts, ...res.data.posts],
         pagination: {
           currentPage: res.data.currentPage,
           totalPages: res.data.totalPages,
-          totalPosts: res.data.totalPosts
-        }
+          totalPosts: res.data.totalPosts,
+        },
       }));
     } catch (error) {
       console.error("Error loading more posts:", error);
@@ -156,14 +159,14 @@ export const usePostStore = create((set, get) => ({
 
   // Reset post state
   resetPosts: () => {
-    set({ 
-      posts: [], 
+    set({
+      posts: [],
       isLoading: false,
       pagination: {
         currentPage: 1,
         totalPages: 1,
-        totalPosts: 0
-      }
+        totalPosts: 0,
+      },
     });
   },
 }));

@@ -26,10 +26,11 @@ import { usePostStore } from "../store/usePostStore.js";
 import toast from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 
-const SocialHome = () => {
+const AdminPage = () => {
   // Quản lý hiển thị popup và lưu thông tin cuộc hội thoại được chọn
   const [showMessagePopup, setShowMessagePopup] = useState(false);
-  const { users, getUsers, isUsersLoading, setSelectedUser } = useChatStore();
+  const { users, getUsers, isUsersLoading, setSelectedUser, deleteUser } =
+    useChatStore();
   const { authUser, onlineUsers, connectSocket } = useAuthStore();
   const {
     posts,
@@ -63,57 +64,6 @@ const SocialHome = () => {
       connectSocket();
     }
   }, [getUsers, connectSocket, authUser, getPosts]);
-
-  // Handle post image change
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPostImage(reader.result);
-      setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Remove selected image
-  const removeImage = () => {
-    setPostImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  // Handle creating a new post
-  const handleCreatePost = async (e) => {
-    e.preventDefault();
-
-    if (!postText.trim() && !postImage) {
-      toast.error("Post cannot be empty");
-      return;
-    }
-
-    const result = await createPost({
-      text: postText.trim(),
-      image: postImage,
-    });
-
-    if (result) {
-      setPostText("");
-      setPostImage(null);
-      setImagePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
 
   // Handle liking a post
   const handleLikePost = async (postId) => {
@@ -183,13 +133,6 @@ const SocialHome = () => {
     }
   }, [showMessagePopup, users]);
 
-  // Khi người dùng click vào tin nhắn, lưu lại thông tin cuộc hội thoại và mở modal
-  const handleMessageClick = (user) => {
-    setSelectedUser(user);
-    setShowMessagePopup(true);
-    toast.success(`Chat started with ${user.fullName}`);
-  };
-
   // Check if a user is online
   const isUserOnline = (userId) => {
     return onlineUsers.includes(userId);
@@ -206,207 +149,72 @@ const SocialHome = () => {
       loadMorePosts();
     }
   };
-
+  const handleDeleteUser = async (userId) => {
+    for (const post of posts) {
+      if (post.userId?._id === userId) {
+        await handleDeletePost(post._id);
+      }
+    }
+    toast.success("User and their posts deleted!");
+    await deleteUser(userId);
+  };
   return (
     <>
-      {/* MAIN CONTENT */}
-      <main className="relative top-[5.4rem] bg-base-100">
-        <div className="w-[80%] mx-auto grid grid-cols-[18vw_auto_20vw] gap-8 relative max-lg:grid-cols-[5rem_auto_30vw] max-md:grid-cols-[0_auto_5rem]">
-          {/* LEFT SIDEBAR */}
-          <div className="h-max sticky top-[1rem] max-md:fixed max-md:bottom-0 max-md:right-10 max-md:top-21 max-md:w-16 z-5">
-            <Link
-              to={"/profile"}
-              className="p-4 bg-base-100 dark:bg-gray-900 rounded-lg flex items-center gap-4 max-lg:hidden shadow-sm"
-            >
-              <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                <img
-                  src={authUser?.profilePic || "/avatar.png"}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
+      <div className="relative top-[5.4rem]">
+        <div className="p-8 grid grid-cols-5 gap-4 justify-center ">
+          <div className="shadow-md col-span-3 rounded-lg bg-gray-100">
+            <div className="bg-gray-100 rounded-lg p-4 shadow-sm ">
+              <div className="flex items-center justify-between mb-4 ">
+                <div className="text-lg font-semibold">Users</div>
               </div>
-              <div>
-                <h4 className="font-medium">{authUser?.fullName || "User"}</h4>
-                <p className="text-gray-400 text-sm">
-                  @{authUser?.email?.split("@")[0] || "user"}
-                </p>
-              </div>
-            </Link>
-            {/* SIDEBAR MENU */}
-            <div className="mt-4 bg-base-100 dark:bg-gray-900 rounded-lg shadow-sm">
-              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100 bg-gray-100 rounded-tl-lg overflow-hidden">
-                <span className="before:content-[''] before:block before:w-2 before:h-full before:rounded-tl-md before:absolute before:bg-purple-500 h-full">
-                  <Home className="mt-4 text-purple-500 text-[1.4rem] ml-4 relative" />
-                </span>
-                <h3 className="ml-4 text-purple-500 max-lg:hidden">Home</h3>
-              </a>
-              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100">
-                <span>
-                  <Compass className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                </span>
-                <h3 className="ml-4 max-lg:hidden">Explore</h3>
-              </a>
-              <a
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-                id="notifications"
-              >
-                <span className="relative">
-                  <Bell className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                  <small className="bg-red-500 text-white text-[0.7rem] w-fit rounded-full px-1.5 py-0.5 absolute -top-1 -right-1">
-                    9+
-                  </small>
-                </span>
-                <h3 className="ml-4 max-lg:hidden">Notifications</h3>
-                {/* Popup thông báo (ẩn mặc định) */}
-                <div className="absolute top-0 left-[110%] w-[30rem] bg-white rounded-lg p-4 shadow-lg z-8 hidden max-md:left-[-20rem] max-md:w-[20rem]">
-                  {[1, 2, 3, 4, 5].map((item, index) => (
-                    <div key={index} className="flex items-start gap-4 mb-4">
-                      <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                        <img
-                          src={`/placeholder.svg?height=50&width=50&text=${item}`}
-                          alt="Profile"
-                          className="w-full"
-                        />
-                      </div>
-                      <div>
-                        <b>KeKe Benjamin</b> accepted your friend request
-                        <small className="text-gray-500 block">
-                          2 DAYS AGO
-                        </small>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </a>
-
-              <Link
-                to="/message"
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-              >
-                <span className="relative">
-                  <MessageSquare className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                  <small className="bg-red-500 text-white text-[0.7rem] w-fit rounded-full px-1.5 py-0.5 absolute -top-1 -right-1">
-                    6
-                  </small>
-                </span>
-                <h3 className="ml-4 max-lg:hidden">Message</h3>
-              </Link>
-
-              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100">
-                <span>
-                  <Bookmark className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                </span>
-                <h3 className="ml-4 max-lg:hidden">Bookmarks</h3>
-              </a>
-
-              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100">
-                <span>
-                  <ChartLine className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                </span>
-                <h3 className="ml-4 max-lg:hidden">Analytics</h3>
-              </a>
-
-              <a
-                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-                id="theme"
-              >
-                <span>
-                  <Palette className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                </span>
-                <h3 className="ml-4 max-lg:hidden">Themes</h3>
-              </a>
-
-              <a className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100 rounded-bl-lg overflow-hidden">
-                <span>
-                  <Settings className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                </span>
-                <h3 className="ml-4 max-lg:hidden">Settings</h3>
-              </a>
             </div>
-          </div>
-
-          {/* MIDDLE CONTENT */}
-          <div className="max-md:col-span-2 max-md:col-start-1">
-            {/* CREATE POST */}
-            <form
-              onSubmit={handleCreatePost}
-              className="mt-4 bg-white p-4 rounded-lg shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 w-full">
-                  <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                    <img
-                      src={authUser?.profilePic || "/avatar.png"}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="What's on your mind?"
-                    className="w-full p-2 rounded-full bg-gray-100 focus:outline-none text-gray-800"
-                    value={postText}
-                    onChange={(e) => setPostText(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {imagePreview && (
-                <div className="mt-3 relative">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="max-h-60 rounded-lg object-contain mx-auto"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 bg-gray-800 bg-opacity-50 text-white rounded-full p-1 hover:bg-opacity-70"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-
-              <div className="mt-3 flex justify-between items-center">
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 text-gray-600 hover:text-purple-500 transition-colors"
-                  >
-                    <ImageIcon size={20} />
-                    <span className="text-sm">Photo</span>
-                  </button>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="bg-purple-500 text-white py-2 px-6 rounded-full font-medium text-sm hover:opacity-80 transition-all disabled:opacity-50"
-                  disabled={isCreatingPost || (!postText.trim() && !postImage)}
-                >
-                  {isCreatingPost ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Posting...</span>
+            {isUsersLoading ? (
+              <div className="text-center py-4">Loading...</div>
+            ) : users.length > 0 ? (
+              users.map((user) => (
+                <div key={user._id} className="flex gap-4 mb-4 mt-2">
+                  <div className="relative">
+                    <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                      <img
+                        src={user.profilePic || "/avatar.png"}
+                        alt="Profile"
+                        className="w-full h-full rounded-full object-cover"
+                      />
                     </div>
-                  ) : (
-                    "Post"
-                  )}
-                </button>
+                    {isUserOnline(user._id) && (
+                      <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
+                    )}
+                  </div>
+                  <div>
+                    <h5 className="font-medium">{user.fullName}</h5>
+                    <p className="text-sm text-gray-500">
+                      {isUserOnline(user._id) ? "Online" : "Offline"}
+                    </p>
+                  </div>
+
+                  <X
+                    className="cursor-pointer ml-auto"
+                    onClick={() => handleDeleteUser(user?._id)}
+                  ></X>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                No users found
               </div>
-            </form>
+            )}
+          </div>
+          <div className="shadow-md col-span-2 rounded-lg bg-gray-100">
+            <div className="max-md:col-span-2 max-md:col-start-1"></div>
+            <div className="bg-gray100 rounded-lg p-4 shadow-sm relative z-100">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-lg font-semibold">User Posts</div>
+              </div>
+            </div>
 
             {/* FEEDS */}
             <div
-              className="h-114 mt-4 space-y-4 overflow-y-scroll "
+              className="h-120 space-y-4 overflow-y-scroll bg-gray-100"
               style={{
                 scrollbarWidth: "none",
                 msOverflowStyle: "none",
@@ -417,7 +225,7 @@ const SocialHome = () => {
                   <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
                 </div>
               ) : posts.length === 0 ? (
-                <div className="bg-white rounded-lg p-8 text-center">
+                <div className="bg-gray-100 rounded-lg p-4 text-center">
                   <p className="text-gray-500">
                     No posts yet. Be the first to share something!
                   </p>
@@ -449,7 +257,8 @@ const SocialHome = () => {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          {post.userId?._id === authUser?._id && (
+                          {(post.userId?._id === authUser?._id ||
+                            authUser?.role === "admin") && (
                             <button
                               onClick={() => handleDeletePost(post._id)}
                               className="text-gray-500 hover:text-red-500"
@@ -669,134 +478,12 @@ const SocialHome = () => {
                 </>
               )}
             </div>
-          </div>
-
-          {/* RIGHT SIDEBAR */}
-          <div className="h-max sticky top-[var(--sticky-top-right)] bottom-0 max-md:hidden">
-            {/* MESSAGES */}
-            <div className="bg-white rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-medium">Messages</h4>
-                <Edit className="text-xl cursor-pointer" />
-              </div>
-
-              <div className="flex bg-gray-100 rounded-full py-2 px-4 mb-4">
-                <Search className="text-gray-500" />
-                <input
-                  type="search"
-                  placeholder="Search messages"
-                  className="bg-transparent w-full ml-2 focus:outline-none text-sm"
-                />
-              </div>
-
-              {/* MESSAGE CATEGORY */}
-              <div className="flex justify-between mb-4">
-                <h6 className="w-full text-center pb-2 border-b-4 border-gray-800 text-sm font-semibold">
-                  Primary
-                </h6>
-                <h6 className="w-full text-center pb-2 border-b-4 border-gray-100 text-sm font-semibold">
-                  General
-                </h6>
-                <h6 className="w-full text-center pb-2 border-b-4 border-gray-100 text-sm font-semibold text-purple-500">
-                  Requests(7)
-                </h6>
-              </div>
-
-              {/* Danh sách tin nhắn */}
-              {isUsersLoading ? (
-                <div className="text-center py-4">Loading...</div>
-              ) : users.length > 0 ? (
-                users.map((user) => (
-                  <div
-                    key={user._id}
-                    className="flex gap-4 mb-4 cursor-pointer"
-                    onClick={() => handleMessageClick(user)}
-                  >
-                    <div className="relative">
-                      <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                        <img
-                          src={user.profilePic || "/avatar.png"}
-                          alt="Profile"
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      </div>
-                      {isUserOnline(user._id) && (
-                        <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
-                      )}
-                    </div>
-                    <div>
-                      <h5 className="font-medium">{user.fullName}</h5>
-                      <p className="text-sm text-gray-500">
-                        {isUserOnline(user._id) ? "Online" : "Offline"}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4">No users found</div>
-              )}
-            </div>
-
-            {/* FRIEND REQUESTS */}
-            <div className="mt-4">
-              <h4 className="text-gray-500 font-medium my-4">Requests</h4>
-              {[1, 2, 3].map((item, index) => (
-                <div key={index} className="bg-white p-4 rounded-lg mb-3">
-                  <div className="flex gap-4 mb-4">
-                    <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                      <img
-                        src={`/placeholder.svg?height=50&width=50&text=${item}`}
-                        alt="Profile"
-                        className="w-full"
-                      />
-                    </div>
-                    <div>
-                      <h5 className="font-medium">Hajia Bintu</h5>
-                      <p className="text-gray-500 text-sm">8 mutual friends</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <button className="bg-purple-500 text-white py-2 px-4 rounded-full text-sm font-medium hover:opacity-80 transition-all">
-                      Accept
-                    </button>
-                    <button className="bg-white border border-gray-200 py-2 px-4 rounded-full text-sm font-medium hover:bg-gray-100 transition-all">
-                      Decline
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/*  */}
           </div>
         </div>
-      </main>
-
-      {/* POPUP MODAL CHAT */}
-      {showMessagePopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-lg h-[90vh] max-h-[700px] flex flex-col overflow-hidden">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                Chat with{" "}
-                {useChatStore.getState().selectedUser?.fullName || "User"}
-                {isUserOnline(useChatStore.getState().selectedUser?._id) && (
-                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
-                )}
-              </h2>
-              <button
-                onClick={() => setShowMessagePopup(false)}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <ChatContainer />
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </>
   );
 };
 
-export default SocialHome;
+export default AdminPage;
