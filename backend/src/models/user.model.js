@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: "user",
     },
+    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   //Thời gian tạo
   { timestamps: true }

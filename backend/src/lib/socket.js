@@ -11,6 +11,9 @@ const io = new Server(server, {
   },
 });
 
+// Make io available throughout the app
+app.set("io", io);
+
 export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }
@@ -41,12 +44,48 @@ io.on("connection", (socket) => {
       io.to(receiverSocketId).emit("stopTyping", { senderId: userId });
     }
   });
-
   // Handle read receipts
   socket.on("messageRead", ({ messageId, receiverId }) => {
     const receiverSocketId = userSocketMap[receiverId];
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("messageRead", { messageId });
+    }
+  });
+    /**
+   * Friend request real-time notification system
+   * 
+   * This section implements Socket.io event handlers for all friend-related actions.
+   * These handlers enable real-time updates to users when:
+   * 1. They receive a new friend request
+   * 2. Their friend request is accepted
+   * 3. They are removed from someone's friend list
+   */
+  
+  // Listen for when a user sends a friend request to another user
+  socket.on("friendRequest", ({ receiverId, request }) => {
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      // Notify recipient about the new friend request in real-time
+      io.to(receiverSocketId).emit("friendRequest", request);
+    }
+  });
+  
+  // Listen for when a user accepts a friend request
+  socket.on("friendRequestAccepted", ({ receiverId, user }) => {
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      // Notify the original requester that their request was accepted
+      io.to(receiverSocketId).emit("friendRequestAccepted", user);
+    }
+  });
+  
+  // Listen for when a user removes someone from their friends list
+  socket.on("friendRemoved", ({ receiverId, userId }) => {
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      // Notify the removed user about the friendship termination
+      // This allows for immediate UI updates on both users' devices
+      io.to(receiverSocketId).emit("friendRemoved", { userId });
     }
   });
 
