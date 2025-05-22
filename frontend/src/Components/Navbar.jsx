@@ -1,12 +1,20 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useFriendStore } from "../store/useFriendStore";
-import { LogOut, MessageSquare, Settings, User, UserPlus, Bell, X } from "lucide-react";
+import {
+  LogOut,
+  MessageSquare,
+  Settings,
+  User,
+  UserPlus,
+  Bell,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 /**
  * Navbar Component
- * 
+ *
  * This component includes friend request notification functionality:
  * - Displays a notification bell with count of pending friend requests
  * - Shows a dropdown with friend request details when clicked
@@ -16,7 +24,7 @@ const Navbar = () => {
   const { logout, authUser } = useAuthStore();
   const { friendRequests, fetchFriendRequests } = useFriendStore();
   const [showNotifications, setShowNotifications] = useState(false);
-  
+
   // Fetch friend requests when the component mounts
   useEffect(() => {
     if (authUser) {
@@ -43,10 +51,10 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {authUser && (
+            {authUser && authUser?.role !== "admin" && (
               <div className="relative">
                 {/* Friend request notification bell with counter badge */}
-                <button 
+                <button
                   className="btn btn-sm gap-2 transition-colors relative"
                   onClick={() => setShowNotifications(!showNotifications)}
                 >
@@ -58,7 +66,7 @@ const Navbar = () => {
                     </span>
                   )}
                 </button>
-                
+
                 {/* Friend request dropdown menu */}
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white shadow-xl rounded-lg z-50">
@@ -71,9 +79,9 @@ const Navbar = () => {
                           No new notifications
                         </div>
                       ) : (
-                        friendRequests.map(request => (
-                          <Link 
-                            key={request._id} 
+                        friendRequests.map((request) => (
+                          <Link
+                            key={request._id}
                             to="/profile"
                             className="flex items-start gap-3 p-3 hover:bg-gray-50 border-b"
                             onClick={() => {
@@ -82,40 +90,51 @@ const Navbar = () => {
                           >
                             {/* Friend request sender info */}
                             <div className="flex-shrink-0">
-                              <img 
-                                src={request.from.profilePic || "/avatar.png"} 
-                                alt="" 
+                              <img
+                                src={request.from.profilePic || "/avatar.png"}
+                                alt=""
                                 className="w-10 h-10 rounded-full object-cover"
                               />
                             </div>
                             <div className="flex-1">
                               <p>
-                                <span className="font-medium">{request.from.fullName}</span> 
-                                <span className="text-gray-600"> sent you a friend request</span>
+                                <span className="font-medium">
+                                  {request.from.fullName}
+                                </span>
+                                <span className="text-gray-600">
+                                  {" "}
+                                  sent you a friend request
+                                </span>
                               </p>
                               <p className="text-xs text-gray-500">
-                                {new Date(request.createdAt).toLocaleDateString()}
+                                {new Date(
+                                  request.createdAt
+                                ).toLocaleDateString()}
                               </p>
                             </div>
                             {/* Accept/decline buttons */}
                             <div className="flex gap-1">
-                              <button 
+                              <button
                                 className="p-1 bg-primary text-white rounded-full"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  useFriendStore.getState().respondToFriendRequest(request._id, true);
+                                  useFriendStore
+                                    .getState()
+                                    .respondToFriendRequest(request._id, true);
                                   setShowNotifications(false);
                                 }}
                               >
                                 <User className="w-3 h-3" />
                               </button>
-                              <button 
+                              <button
                                 className="p-1 bg-gray-200 rounded-full"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  useFriendStore.getState().respondToFriendRequest(request._id, false);
+                                  useFriendStore
+                                    .getState()
+                                    .respondToFriendRequest(request._id, false);
                                   setShowNotifications(false);
                                 }}
                               >
@@ -130,7 +149,7 @@ const Navbar = () => {
                 )}
               </div>
             )}
-            
+
             <Link
               to={"/settings"}
               className={`

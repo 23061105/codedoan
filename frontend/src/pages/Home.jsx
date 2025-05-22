@@ -32,7 +32,8 @@ const SocialHome = () => {
   // Quản lý hiển thị popup và lưu thông tin cuộc hội thoại được chọn
   const [showMessagePopup, setShowMessagePopup] = useState(false);
   const { users, getUsers, isUsersLoading, setSelectedUser } = useChatStore();
-   const { authUser, onlineUsers, connectSocket, notifications } = useAuthStore();
+  const { authUser, onlineUsers, connectSocket, notifications } =
+    useAuthStore();
   const {
     posts,
     getPosts,
@@ -59,7 +60,7 @@ const SocialHome = () => {
   useEffect(() => {
     getUsers();
     getPosts();
-    
+
     // Fetch friend data
     const friendStore = useFriendStore.getState();
     friendStore.fetchFriends();
@@ -122,33 +123,33 @@ const SocialHome = () => {
       }
     }
   };
-useEffect(() => {
-  const socket = useAuthStore.getState().socket;
-  const { addNotification } = useAuthStore.getState();
+  useEffect(() => {
+    const socket = useAuthStore.getState().socket;
+    const { addNotification } = useAuthStore.getState();
 
-  if (socket) {
-    socket.on("postLiked", ({ userName }) => {
-      addNotification({
-        message: `${userName} đã thích bài viết của bạn`,
-        time: new Date().toISOString(),
-        type: "like",
+    if (socket) {
+      socket.on("postLiked", ({ userName }) => {
+        addNotification({
+          message: `${userName} đã thích bài viết của bạn`,
+          time: new Date().toISOString(),
+          type: "like",
+        });
       });
-    });
 
-    socket.on("postCommented", ({ userName }) => {
-      addNotification({
-        message: `${userName} đã bình luận bài viết của bạn`,
-        time: new Date().toISOString(),
-        type: "comment",
+      socket.on("postCommented", ({ userName }) => {
+        addNotification({
+          message: `${userName} đã bình luận bài viết của bạn`,
+          time: new Date().toISOString(),
+          type: "comment",
+        });
       });
-    });
 
-    return () => {
-      socket.off("postLiked");
-      socket.off("postCommented");
-    };
-  }
-}, []);
+      return () => {
+        socket.off("postLiked");
+        socket.off("postCommented");
+      };
+    }
+  }, []);
   // Handle liking a post
   const handleLikePost = async (postId) => {
     await likePost(postId);
@@ -206,17 +207,17 @@ useEffect(() => {
             toast.success(`New message from ${sender.fullName}`);
           }
         }
-      };      // Listen for new messages
+      }; // Listen for new messages
       socket.on("newMessage", handleNewMessage);
 
       /**
        * Socket event listeners for friend functionality
-       * 
+       *
        * These handlers enable real-time updates of the UI when friend-related
        * events occur. The Home component registers these listeners to ensure
        * that friend events are processed even when viewing the home feed.
        */
-      
+
       // Listen for incoming friend requests from other users
       socket.on("friendRequest", (request) => {
         // Forward the event to the friend store to update UI and show notification
@@ -228,16 +229,16 @@ useEffect(() => {
         // Update friends list and show notification via the friend store
         useFriendStore.getState().handleFriendRequestAccepted(user);
       });
-      
+
       // Listen for notifications when someone removes you from their friends list
       socket.on("friendRemoved", (data) => {
         // Update local friends list to maintain consistency with the server
         useFriendStore.getState().handleFriendRemoved(data);
-      });      // Cleanup function to remove socket listeners when component unmounts
+      }); // Cleanup function to remove socket listeners when component unmounts
       // This prevents memory leaks and duplicate event handlers
       return () => {
         socket.off("newMessage", handleNewMessage);
-        
+
         // Remove friend-related socket listeners
         socket.off("friendRequest");
         socket.off("friendRequestAccepted");
@@ -251,7 +252,8 @@ useEffect(() => {
     setSelectedUser(user);
     setShowMessagePopup(true);
     toast.success(`Chat started with ${user.fullName}`);
-  };  /**
+  };
+  /**
    * Checks if a user is currently online
    * @param {string} userId - The ID of the user to check
    * @returns {boolean} True if the user is online
@@ -263,37 +265,39 @@ useEffect(() => {
   /**
    * Checks if a user is already a friend of the current user
    * Contains null checks to prevent UI errors when friends data is loading
-   * 
+   *
    * This is important for determining what UI elements to show in the post feed
    * (e.g., "Add Friend" button vs "Friend" indicator)
-   * 
+   *
    * @param {string} userId - ID of the user to check
    * @returns {boolean} True if the user is already a friend
    */
   const isCurrentUserFriend = (userId) => {
     if (!userId) return false;
-    
+
     const { friends } = useFriendStore.getState();
     if (!friends || !Array.isArray(friends)) return false;
-    
-    return friends.some(friend => friend && friend._id === userId);
+
+    return friends.some((friend) => friend && friend._id === userId);
   };
 
   /**
    * Checks if there is a pending friend request to a user
    * Used to prevent sending duplicate friend requests
    * Contains null checks for data safety
-   * 
+   *
    * @param {string} userId - ID of the user to check
    * @returns {boolean} True if there's already a pending request
    */
   const hasPendingRequest = (userId) => {
     if (!userId) return false;
-    
+
     const { sentRequests } = useFriendStore.getState();
     if (!sentRequests || !Array.isArray(sentRequests)) return false;
-    
-    return sentRequests.some(request => request && request.to && request.to._id === userId);
+
+    return sentRequests.some(
+      (request) => request && request.to && request.to._id === userId
+    );
   };
   // Handle sending a friend request
   const handleSendFriendRequest = async (userId) => {
@@ -302,7 +306,7 @@ useEffect(() => {
         toast.error("Invalid user ID");
         return;
       }
-      
+
       await useFriendStore.getState().sendFriendRequest(userId);
       // Toast is already shown in the store function
     } catch (error) {
@@ -363,48 +367,50 @@ useEffect(() => {
                 <h3 className="ml-4 max-lg:hidden">Explore</h3>
               </a>
               <div
-  className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-  onClick={() => setShowNotificationPopup(!showNotificationPopup)}
->
-  <span className="relative">
-    <Bell className="text-gray-500 text-[1.4rem] ml-4 relative" />
-    <small className="bg-red-500 text-white text-[0.7rem] w-fit rounded-full px-1.5 py-0.5 absolute -top-1 -right-1">
-      9+
-    </small>
-  </span>
-  <h3 className="ml-4 max-lg:hidden">Notifications</h3>
+                className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
+                onClick={() => setShowNotificationPopup(!showNotificationPopup)}
+              >
+                <span className="relative">
+                  <Bell className="text-gray-500 text-[1.4rem] ml-4 relative" />
+                  <small className="bg-red-500 text-white text-[0.7rem] w-fit rounded-full px-1.5 py-0.5 absolute -top-1 -right-1">
+                    9+
+                  </small>
+                </span>
+                <h3 className="ml-4 max-lg:hidden">Notifications</h3>
 
-        {/* Popup thông báo - toggle hiển thị bằng showNotificationPopup */}
-      {showNotificationPopup && (
-        <div className="absolute top-0 left-[110%] w-[30rem] bg-white rounded-lg p-4 shadow-lg z-10 max-md:left-[-20rem] max-md:w-[20rem]">
-          {notifications.length === 0 ? (
-            <p className="text-gray-500">Không có thông báo nào</p>
-          ) : (
-            notifications
-              .slice() // clone
-              .reverse() // hiển thị mới nhất lên đầu
-              .map((notif, index) => (
-                <div key={index} className="flex items-start gap-4 mb-4">
-                  <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                    <img
-                      src="/avatar.png"
-                      alt="Profile"
-                      className="w-full"
-                    />
+                {/* Popup thông báo - toggle hiển thị bằng showNotificationPopup */}
+                {showNotificationPopup && (
+                  <div className="absolute top-0 left-[110%] w-[30rem] bg-white rounded-lg p-4 shadow-lg z-10 max-md:left-[-20rem] max-md:w-[20rem]">
+                    {notifications.length === 0 ? (
+                      <p className="text-gray-500">Không có thông báo nào</p>
+                    ) : (
+                      notifications
+                        .slice() // clone
+                        .reverse() // hiển thị mới nhất lên đầu
+                        .map((notif, index) => (
+                          <div
+                            key={index}
+                            className="flex items-start gap-4 mb-4"
+                          >
+                            <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                              <img
+                                src="/avatar.png"
+                                alt="Profile"
+                                className="w-full"
+                              />
+                            </div>
+                            <div>
+                              <b>{notif.message}</b>
+                              <small className="text-gray-500 block">
+                                {formatDate(notif.time)}
+                              </small>
+                            </div>
+                          </div>
+                        ))
+                    )}
                   </div>
-                  <div>
-                    <b>{notif.message}</b>
-                    <small className="text-gray-500 block">
-                      {formatDate(notif.time)}
-                    </small>
-                  </div>
-                </div>
-              ))
-          )}
-        </div>
-      )}
-      </div>
-
+                )}
+              </div>
 
               <Link
                 to="/message"
@@ -451,7 +457,6 @@ useEffect(() => {
               </a>
             </div>
           </div>
-
           {/* MIDDLE CONTENT */}
           <div className="max-md:col-span-2 max-md:col-start-1">
             {/* CREATE POST */}
@@ -796,11 +801,11 @@ useEffect(() => {
                 </>
               )}
             </div>
-          </div>          {/* RIGHT SIDEBAR */}
+          </div>{" "}
+          {/* RIGHT SIDEBAR */}
           <div className="h-max sticky top-[var(--sticky-top-right)] bottom-0 max-md:hidden">
             {/* Friends list */}
             <FriendsSidebar onStartChat={handleMessageClick} />
-            
             {/* MESSAGES */}
             <div className="bg-white rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
@@ -817,77 +822,78 @@ useEffect(() => {
                 />
               </div>
 
-              {/* MESSAGE CATEGORY */}
-              <div className="flex justify-between mb-4">
-                <h6 className="w-full text-center pb-2 border-b-4 border-gray-800 text-sm font-semibold">
-                  Primary
-                </h6>
-                <h6 className="w-full text-center pb-2 border-b-4 border-gray-100 text-sm font-semibold">
-                  General
-                </h6>
-                <h6 className="w-full text-center pb-2 border-b-4 border-gray-100 text-sm font-semibold text-purple-500">
-                  Requests(7)
-                </h6>
-              </div>
-
               {/* Danh sách tin nhắn */}
               {isUsersLoading ? (
                 <div className="text-center py-4">Loading...</div>
-              ) : users.length > 0 ? (                users.map((user) => (
-                  <div
-                    key={user._id}
-                    className="flex justify-between items-center mb-4"
-                  >
-                    <div 
-                      className="flex gap-4 cursor-pointer"
-                      onClick={() => handleMessageClick(user)}
-                    >
-                      <div className="relative">
-                        <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                          <img
-                            src={user.profilePic || "/avatar.png"}
-                            alt="Profile"
-                            className="w-full h-full rounded-full object-cover"
-                          />
+              ) : users.length > 0 ? (
+                users.map(
+                  (user) =>
+                    user.role !== "admin" && (
+                      <div
+                        key={user._id}
+                        className="flex justify-between items-center mb-4"
+                      >
+                        <div
+                          className="flex gap-4 cursor-pointer"
+                          onClick={() => handleMessageClick(user)}
+                        >
+                          <div className="relative">
+                            <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                              <img
+                                src={user.profilePic || "/avatar.png"}
+                                alt="Profile"
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            </div>
+                            {isUserOnline(user._id) && (
+                              <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
+                            )}
+                          </div>
+                          <div>
+                            <h5 className="font-medium">{user.fullName}</h5>
+                            <p className="text-sm text-gray-500">
+                              {isUserOnline(user._id) ? "Online" : "Offline"}
+                            </p>
+                          </div>
                         </div>
-                        {isUserOnline(user._id) && (
-                          <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
+                        {!isCurrentUserFriend(user._id) &&
+                          !hasPendingRequest(user._id) &&
+                          user._id !== authUser?._id && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSendFriendRequest(user._id);
+                              }}
+                              className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-200"
+                            >
+                              Add Friend
+                            </button>
+                          )}
+                        {hasPendingRequest(user._id) && (
+                          <span className="text-xs text-gray-500">
+                            Request Sent
+                          </span>
                         )}
                       </div>
-                      <div>
-                        <h5 className="font-medium">{user.fullName}</h5>
-                        <p className="text-sm text-gray-500">
-                          {isUserOnline(user._id) ? "Online" : "Offline"}
-                        </p>
-                      </div>
-                    </div>
-                    {!isCurrentUserFriend(user._id) && !hasPendingRequest(user._id) && user._id !== authUser?._id && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSendFriendRequest(user._id);
-                        }}
-                        className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-200"
-                      >
-                        Add Friend
-                      </button>
-                    )}
-                    {hasPendingRequest(user._id) && (
-                      <span className="text-xs text-gray-500">Request Sent</span>
-                    )}
-                  </div>
-                ))
+                    )
+                )
               ) : (
                 <div className="text-center py-4">No users found</div>
               )}
-            </div>            {/* FRIEND REQUESTS */}
+            </div>{" "}
+            {/* FRIEND REQUESTS */}
             <div className="mt-4">
-              <h4 className="text-gray-500 font-medium my-4">Friend Requests</h4>
+              <h4 className="text-gray-500 font-medium my-4">
+                Friend Requests
+              </h4>
               {isUsersLoading ? (
                 <div className="text-center py-4">Loading...</div>
               ) : useFriendStore.getState().friendRequests.length > 0 ? (
                 useFriendStore.getState().friendRequests.map((request) => (
-                  <div key={request._id} className="bg-white p-4 rounded-lg mb-3">
+                  <div
+                    key={request._id}
+                    className="bg-white p-4 rounded-lg mb-3"
+                  >
                     <div className="flex justify-between">
                       <div className="flex gap-4 mb-4">
                         <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
@@ -898,7 +904,9 @@ useEffect(() => {
                           />
                         </div>
                         <div>
-                          <h5 className="font-medium">{request.from.fullName}</h5>
+                          <h5 className="font-medium">
+                            {request.from.fullName}
+                          </h5>
                           <p className="text-gray-500 text-sm">
                             {new Date(request.createdAt).toLocaleDateString()}
                           </p>
@@ -906,14 +914,22 @@ useEffect(() => {
                       </div>
                     </div>
                     <div className="flex gap-4">
-                      <button 
-                        onClick={() => useFriendStore.getState().respondToFriendRequest(request._id, true)}
+                      <button
+                        onClick={() =>
+                          useFriendStore
+                            .getState()
+                            .respondToFriendRequest(request._id, true)
+                        }
                         className="bg-purple-500 text-white py-2 px-4 rounded-full text-sm font-medium hover:opacity-80 transition-all"
                       >
                         Accept
                       </button>
-                      <button 
-                        onClick={() => useFriendStore.getState().respondToFriendRequest(request._id, false)}
+                      <button
+                        onClick={() =>
+                          useFriendStore
+                            .getState()
+                            .respondToFriendRequest(request._id, false)
+                        }
                         className="bg-white border border-gray-200 py-2 px-4 rounded-full text-sm font-medium hover:bg-gray-100 transition-all"
                       >
                         Decline
@@ -922,7 +938,9 @@ useEffect(() => {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-gray-500">No friend requests</div>
+                <div className="text-center py-4 text-gray-500">
+                  No friend requests
+                </div>
               )}
             </div>
           </div>

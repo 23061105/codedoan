@@ -5,7 +5,7 @@ import Home from "./pages/Home";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
-import Navbar from "./components/Navbar";
+import Navbar from "./Components/Navbar";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import { Routes, Route, Navigate } from "react-router-dom";
@@ -42,7 +42,7 @@ function App() {
         ></Route>
         <Route
           path="/signup"
-          element={!authUser ? <SignUpPage /> : <Navigate to="/login" />}
+          element={!authUser ? <SignUpPage /> : <Navigate to="/" />}
         ></Route>
         {authUser?.role === "user" ? (
           <>
@@ -73,7 +73,7 @@ function App() {
           </>
         )}
       </Routes>
-       {/* <Notifications /> */}
+      {/* <Notifications /> */}
       <Toaster />
     </>
   );
