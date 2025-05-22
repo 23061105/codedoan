@@ -12,6 +12,7 @@ import {
   Search,
   Settings,
   Share,
+  Users,
   ThumbsUp,
   Trash2,
   X,
@@ -19,6 +20,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
+import FriendsWidget from "../Components/FriendsWidget.jsx";
+import UserSearch from "../Components/UserSearch.jsx";
 import ChatContainer from "../Components/ChatContainer.jsx";
 import FriendsSidebar from "../Components/FriendsSidebar.jsx";
 import { useChatStore } from "../store/useChatStore.js";
@@ -47,6 +50,8 @@ const SocialHome = () => {
     pagination,
   } = usePostStore();
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   // State for post creation
   const [postText, setPostText] = useState("");
   const [postImage, setPostImage] = useState(null);
@@ -64,7 +69,7 @@ const SocialHome = () => {
     // Fetch friend data
     const friendStore = useFriendStore.getState();
     friendStore.fetchFriends();
-    friendStore.fetchFriendRequests();
+    friendStore.fetchRequests();
     friendStore.fetchSentRequests();
 
     // Ensure socket connection is established
@@ -462,7 +467,7 @@ const SocialHome = () => {
             {/* CREATE POST */}
             <form
               onSubmit={handleCreatePost}
-              className="mt-4 bg-white p-4 rounded-lg shadow-sm"
+              className=" bg-white p-4 rounded-lg shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 w-full">
@@ -806,142 +811,32 @@ const SocialHome = () => {
           <div className="h-max sticky top-[var(--sticky-top-right)] bottom-0 max-md:hidden">
             {/* Friends list */}
             <FriendsSidebar onStartChat={handleMessageClick} />
-            {/* MESSAGES */}
-            <div className="bg-white rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-medium">Messages</h4>
-                <Edit className="text-xl cursor-pointer" />
+
+            {/* FRIENDS WIDGET */}
+            {/* Right column - Friends Widget */}
+            <div className=" sticky top-24 h-fit">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5" />
+                <h2 className="text-xl font-semibold">Manage Connections</h2>
               </div>
 
-              <div className="flex bg-gray-100 rounded-full py-2 px-4 mb-4">
-                <Search className="text-gray-500" />
-                <input
-                  type="search"
-                  placeholder="Search messages"
-                  className="bg-transparent w-full ml-2 focus:outline-none text-sm"
-                />
-              </div>
-
-              {/* Danh sách tin nhắn */}
-              {isUsersLoading ? (
-                <div className="text-center py-4">Loading...</div>
-              ) : users.length > 0 ? (
-                users.map(
-                  (user) =>
-                    user.role !== "admin" && (
-                      <div
-                        key={user._id}
-                        className="flex justify-between items-center mb-4"
-                      >
-                        <div
-                          className="flex gap-4 cursor-pointer"
-                          onClick={() => handleMessageClick(user)}
-                        >
-                          <div className="relative">
-                            <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                              <img
-                                src={user.profilePic || "/avatar.png"}
-                                alt="Profile"
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            </div>
-                            {isUserOnline(user._id) && (
-                              <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
-                            )}
-                          </div>
-                          <div>
-                            <h5 className="font-medium">{user.fullName}</h5>
-                            <p className="text-sm text-gray-500">
-                              {isUserOnline(user._id) ? "Online" : "Offline"}
-                            </p>
-                          </div>
-                        </div>
-                        {!isCurrentUserFriend(user._id) &&
-                          !hasPendingRequest(user._id) &&
-                          user._id !== authUser?._id && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSendFriendRequest(user._id);
-                              }}
-                              className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-200"
-                            >
-                              Add Friend
-                            </button>
-                          )}
-                        {hasPendingRequest(user._id) && (
-                          <span className="text-xs text-gray-500">
-                            Request Sent
-                          </span>
-                        )}
-                      </div>
-                    )
-                )
-              ) : (
-                <div className="text-center py-4">No users found</div>
-              )}
-            </div>{" "}
-            {/* FRIEND REQUESTS */}
-            <div className="mt-4">
-              <h4 className="text-gray-500 font-medium my-4">
-                Friend Requests
-              </h4>
-              {isUsersLoading ? (
-                <div className="text-center py-4">Loading...</div>
-              ) : useFriendStore.getState().friendRequests.length > 0 ? (
-                useFriendStore.getState().friendRequests.map((request) => (
-                  <div
-                    key={request._id}
-                    className="bg-white p-4 rounded-lg mb-3"
-                  >
-                    <div className="flex justify-between">
-                      <div className="flex gap-4 mb-4">
-                        <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                          <img
-                            src={request.from.profilePic || "/avatar.png"}
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h5 className="font-medium">
-                            {request.from.fullName}
-                          </h5>
-                          <p className="text-gray-500 text-sm">
-                            {new Date(request.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() =>
-                          useFriendStore
-                            .getState()
-                            .respondToFriendRequest(request._id, true)
-                        }
-                        className="bg-purple-500 text-white py-2 px-4 rounded-full text-sm font-medium hover:opacity-80 transition-all"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() =>
-                          useFriendStore
-                            .getState()
-                            .respondToFriendRequest(request._id, false)
-                        }
-                        className="bg-white border border-gray-200 py-2 px-4 rounded-full text-sm font-medium hover:bg-gray-100 transition-all"
-                      >
-                        Decline
-                      </button>
-                    </div>
+              {/* Search bar for friends */}
+              <div className="mb-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-gray-500">
-                  No friend requests
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Search friends..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-              )}
+              </div>
+
+              <FriendsWidget searchQuery={searchQuery} />
             </div>
           </div>
         </div>

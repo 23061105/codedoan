@@ -10,15 +10,6 @@ import FriendsSidebar from "../Components/FriendsSidebar";
 
 const HomePage = () => {
   const { selectedUser } = useChatStore();
-  const { fetchFriends, fetchFriendRequests, fetchSentRequests } =
-    useFriendStore();
-
-  useEffect(() => {
-    // Fetch friend data when component mounts
-    fetchFriends();
-    fetchFriendRequests();
-    fetchSentRequests();
-  }, [fetchFriends, fetchFriendRequests, fetchSentRequests]);
 
   return (
     <div className="h-screen bg-base-200">
@@ -30,9 +21,6 @@ const HomePage = () => {
               {!selectedUser ? (
                 <div className="w-full flex h-full md:grid-cols-2 gap-4 p-4 bg-base-100/50">
                   <NoChatSelected />
-                  <div className="hidden md:block">
-                    <UserSearch />
-                  </div>
                 </div>
               ) : (
                 <ChatContainer />

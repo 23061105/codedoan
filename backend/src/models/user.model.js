@@ -27,7 +27,18 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: "user",
     },
-    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    // Friends list - users who are connected
+    friends: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+    ],
+    // Incoming friend requests
+    friendRequests: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+    ],
+    // Outgoing friend requests
+    sentRequests: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+    ],
   },
   //Thời gian tạo
   { timestamps: true }

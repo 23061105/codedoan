@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
+import { useFriendStore } from "./useFriendStore"; // Import useFriendStore here
 
 const BASE_URL =
   import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
@@ -138,50 +139,85 @@ export const useAuthStore = create((set, get) => ({
       set({ onlineUsers: userIds });
     });
 
-    /**
-     * Socket event handlers for friend functionality
-     *
-     * These event listeners are set up in the auth store rather than the friend store
-     * because:
-     * 1. The socket connection is managed here
-     * 2. This ensures friend events are handled even when not on friend-related pages
-     * 3. Provides app-wide real-time notifications for friend events
-     */
+    socket.on("postLiked", ({ userName }) => {
+      get().addNotification({
+        message: `${userName} đã thích bài viết của bạn`,
+        time: new Date().toISOString(),
+        type: "like",
+      });
+    });
+    socket.on("postCommented", ({ userName }) => {
+      get().addNotification({
+        message: `${userName} đã bình luận bài viết của bạn`,
+        time: new Date().toISOString(),
+        type: "comment",
+      });
+    }); // Friend request notifications
+    socket.on("friendRequest", ({ from, fromId, refreshFriends }) => {
+      get().addNotification({
+        message: `${from} sent you a friend request`,
+        time: new Date().toISOString(),
+        type: "friendRequest",
+        fromId,
+      });
 
-    // Dynamic import of friend store to prevent circular dependencies
-    const friendStore = () => {
-      try {
-        return require("./useFriendStore").useFriendStore.getState();
-      } catch (error) {
-        console.error("Error importing friend store:", error);
-        return null;
+      // Refresh friend requests list if needed
+      if (refreshFriends) {
+        const { fetchRequests } = useFriendStore.getState();
+        if (fetchRequests) {
+          fetchRequests();
+        }
       }
-    };
+    });
+    socket.on("friendAccepted", ({ by, byId, refreshFriends }) => {
+      get().addNotification({
+        message: `${by} accepted your friend request`,
+        time: new Date().toISOString(),
+        type: "friendAccepted",
+        byId,
+      });
 
-    // Listen for incoming friend requests from other users
-    // This updates the UI in real-time when someone sends you a request
-    socket.on("friendRequest", (request) => {
-      const fs = friendStore();
-      if (fs && fs.handleNewFriendRequest) {
-        fs.handleNewFriendRequest(request);
+      // Trigger friend list refresh
+      const { fetchFriends, fetchSentRequests } = useFriendStore.getState();
+      if (fetchFriends) {
+        fetchFriends();
+        fetchSentRequests();
       }
     });
 
-    // Listen for notifications when someone accepts your friend request
-    // This updates your friends list immediately when they accept
-    socket.on("friendRequestAccepted", (user) => {
-      const fs = friendStore();
-      if (fs && fs.handleFriendRequestAccepted) {
-        fs.handleFriendRequestAccepted(user);
+    // Listen for friend removal notification
+    socket.on("friendRemoved", ({ by, byId, refreshFriends }) => {
+      get().addNotification({
+        message: `${by} removed you from their friends list`,
+        time: new Date().toISOString(),
+        type: "friendRemoved",
+        byId,
+      });
+
+      // Trigger friend list refresh in the FriendStore
+      if (refreshFriends) {
+        const { fetchFriends } = useFriendStore.getState();
+        if (fetchFriends) {
+          fetchFriends();
+        }
       }
     });
 
-    // Listen for notifications when someone removes you from their friends
-    // This keeps both users' friend lists in sync in real-time
-    socket.on("friendRemoved", (data) => {
-      const fs = friendStore();
-      if (fs && fs.handleFriendRemoved) {
-        fs.handleFriendRemoved(data);
+    // Listen for request cancellation
+    socket.on("requestCanceled", ({ by, byId, refreshFriends }) => {
+      get().addNotification({
+        message: `${by} canceled their friend request`,
+        time: new Date().toISOString(),
+        type: "requestCanceled",
+        byId,
+      });
+
+      // Refresh requests if needed
+      if (refreshFriends) {
+        const { fetchRequests } = useFriendStore.getState();
+        if (fetchRequests) {
+          fetchRequests();
+        }
       }
     });
 

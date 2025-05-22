@@ -22,15 +22,15 @@ import { useEffect, useState } from "react";
  */
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
-  const { friendRequests, fetchFriendRequests } = useFriendStore();
+  const { requests, fetchRequests } = useFriendStore();
   const [showNotifications, setShowNotifications] = useState(false);
 
   // Fetch friend requests when the component mounts
   useEffect(() => {
     if (authUser) {
-      fetchFriendRequests();
+      fetchRequests();
     }
-  }, [fetchFriendRequests, authUser]);
+  }, [fetchRequests, authUser]);
   return (
     <header
       className="border-b border-base-300 fixed w-full top-0 z-40 
@@ -60,9 +60,9 @@ const Navbar = () => {
                 >
                   <Bell className="w-4 h-4" />
                   {/* Badge showing number of pending requests */}
-                  {friendRequests.length > 0 && (
+                  {requests && requests.length > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                      {friendRequests.length}
+                      {requests.length}
                     </span>
                   )}
                 </button>
@@ -72,14 +72,14 @@ const Navbar = () => {
                   <div className="absolute right-0 mt-2 w-72 bg-white shadow-xl rounded-lg z-50">
                     <div className="p-3 border-b">
                       <h3 className="font-medium">Friend Requests</h3>
-                    </div>
+                    </div>{" "}
                     <div className="max-h-96 overflow-y-auto">
-                      {friendRequests.length === 0 ? (
+                      {!requests || requests.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">
                           No new notifications
                         </div>
                       ) : (
-                        friendRequests.map((request) => (
+                        requests.map((request) => (
                           <Link
                             key={request._id}
                             to="/profile"
@@ -91,7 +91,7 @@ const Navbar = () => {
                             {/* Friend request sender info */}
                             <div className="flex-shrink-0">
                               <img
-                                src={request.from.profilePic || "/avatar.png"}
+                                src={request.profilePic || "/avatar.png"}
                                 alt=""
                                 className="w-10 h-10 rounded-full object-cover"
                               />
@@ -99,7 +99,7 @@ const Navbar = () => {
                             <div className="flex-1">
                               <p>
                                 <span className="font-medium">
-                                  {request.from.fullName}
+                                  {request.fullName}
                                 </span>
                                 <span className="text-gray-600">
                                   {" "}
@@ -107,11 +107,12 @@ const Navbar = () => {
                                 </span>
                               </p>
                               <p className="text-xs text-gray-500">
-                                {new Date(
-                                  request.createdAt
-                                ).toLocaleDateString()}
+                                {request.createdAt &&
+                                  new Date(
+                                    request.createdAt
+                                  ).toLocaleDateString()}
                               </p>
-                            </div>
+                            </div>{" "}
                             {/* Accept/decline buttons */}
                             <div className="flex gap-1">
                               <button
@@ -121,7 +122,7 @@ const Navbar = () => {
                                   e.stopPropagation();
                                   useFriendStore
                                     .getState()
-                                    .respondToFriendRequest(request._id, true);
+                                    .acceptRequest(request._id);
                                   setShowNotifications(false);
                                 }}
                               >
@@ -134,7 +135,7 @@ const Navbar = () => {
                                   e.stopPropagation();
                                   useFriendStore
                                     .getState()
-                                    .respondToFriendRequest(request._id, false);
+                                    .declineRequest(request._id);
                                   setShowNotifications(false);
                                 }}
                               >
