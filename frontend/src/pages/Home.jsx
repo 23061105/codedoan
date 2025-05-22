@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
+import FriendsWidget from "../Components/FriendsWidget.jsx";
 import ChatContainer from "../Components/ChatContainer.jsx";
 import FriendsSidebar from "../Components/FriendsSidebar.jsx";
 import { useChatStore } from "../store/useChatStore.js";
@@ -52,16 +53,17 @@ const SocialHome = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [showCommentInput, setShowCommentInput] = useState({});
   const [commentText, setCommentText] = useState({});
-  const [showAllComments, setShowAllComments] = useState({});
-  const fileInputRef = useRef(null);  // Fetch users, ensure socket connection, and load posts when component mounts
+  const [showAllComments, setShowAllComments] = useState({});  const fileInputRef = useRef(null);  
+  
+  // Fetch users, ensure socket connection, and load posts when component mounts
   useEffect(() => {
     getUsers();
     getPosts();
-    
+      
     // Fetch friend data
     const friendStore = useFriendStore.getState();
     friendStore.fetchFriends();
-    friendStore.fetchFriendRequests();
+    friendStore.fetchRequests();
     friendStore.fetchSentRequests();
 
     // Ensure socket connection is established
@@ -845,71 +847,15 @@ const SocialHome = () => {
                         <p className="text-sm text-gray-500">
                           {isUserOnline(user._id) ? "Online" : "Offline"}
                         </p>
-                      </div>
-                    </div>
-                    {!isCurrentUserFriend(user._id) && !hasPendingRequest(user._id) && user._id !== authUser?._id && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSendFriendRequest(user._id);
-                        }}
-                        className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-200"
-                      >
-                        Add Friend
-                      </button>
-                    )}
-                    {hasPendingRequest(user._id) && (
-                      <span className="text-xs text-gray-500">Request Sent</span>
-                    )}
+                      </div>                    </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-4">No users found</div>
               )}
-            </div>            {/* FRIEND REQUESTS */}
+            </div>            {/* FRIENDS WIDGET */}
             <div className="mt-4">
-              <h4 className="text-gray-500 font-medium my-4">Friend Requests</h4>
-              {isUsersLoading ? (
-                <div className="text-center py-4">Loading...</div>
-              ) : useFriendStore.getState().friendRequests.length > 0 ? (
-                useFriendStore.getState().friendRequests.map((request) => (
-                  <div key={request._id} className="bg-white p-4 rounded-lg mb-3">
-                    <div className="flex justify-between">
-                      <div className="flex gap-4 mb-4">
-                        <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                          <img
-                            src={request.from.profilePic || "/avatar.png"}
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h5 className="font-medium">{request.from.fullName}</h5>
-                          <p className="text-gray-500 text-sm">
-                            {new Date(request.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-4">
-                      <button 
-                        onClick={() => useFriendStore.getState().respondToFriendRequest(request._id, true)}
-                        className="bg-purple-500 text-white py-2 px-4 rounded-full text-sm font-medium hover:opacity-80 transition-all"
-                      >
-                        Accept
-                      </button>
-                      <button 
-                        onClick={() => useFriendStore.getState().respondToFriendRequest(request._id, false)}
-                        className="bg-white border border-gray-200 py-2 px-4 rounded-full text-sm font-medium hover:bg-gray-100 transition-all"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-gray-500">No friend requests</div>
-              )}
+              <FriendsWidget />
             </div>
           </div>
         </div>
