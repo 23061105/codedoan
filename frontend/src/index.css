@@ -33,8 +33,7 @@
     opacity: 1;
   }
 }
-
-/* CSS cho popup thông báo */
+  /* CSS cho popup thông báo */
 .notification-container {
   position: fixed;
   bottom: 20px;
@@ -46,6 +45,29 @@
   z-index: 9999;
 }
 
+.notification-popup {
+  background: #333;
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 5px;
+  min-width: 250px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+/* Nút đóng (dấu ×) */
+.notification-popup .close-btn {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
 .notification-popup .close-btn:hover {
   color: #ccc;
 }
+

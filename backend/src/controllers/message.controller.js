@@ -18,22 +18,7 @@ export const getUsersForSidebar = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-export const deleteUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const userRole = req.user.role;
-    if (userRole !== "admin") {
-      return res.status(403).json({
-        message: "Unauthorized: You don't have permission to delete users",
-      });
-    }
-    await User.findByIdAndDelete(userId);
-    res.status(200).json({ message: "User deleted successfully" });
-  } catch (error) {
-    console.log("Error in deleteUser controller: ", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
+
 export const getMessages = async (req, res) => {
   try {
     const { id: userToChatId } = req.params;

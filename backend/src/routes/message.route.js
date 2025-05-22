@@ -4,7 +4,6 @@ import {
   getMessages,
   getUsersForSidebar,
   sendMessage,
-  deleteUser,
   markMessageAsRead,
 } from "../controllers/message.controller.js";
 
@@ -18,5 +17,4 @@ router.post("/send/:id", protectRoute, sendMessage);
 //Đánh dấu tin nhắn đã đọc
 router.put("/read/:messageId", protectRoute, markMessageAsRead);
 
-router.delete("/:userId", protectRoute, deleteUser);
 export default router;

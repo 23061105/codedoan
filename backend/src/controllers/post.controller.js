@@ -2,7 +2,6 @@ import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { io, getReceiverSocketId } from "../lib/socket.js";
-
 // Create a new post
 export const createPost = async (req, res) => {
   try {
@@ -104,16 +103,15 @@ export const likePost = async (req, res) => {
     }
 
     await post.save();
-      if (post.userId.toString() !== userId.toString()) {
-  const receiverSocketId = getReceiverSocketId(post.userId.toString());
-  if (receiverSocketId) {
-    io.to(receiverSocketId).emit("postLiked", {
-      userName: req.user.fullName
-      // Có thể gửi thêm postId: post._id nếu cần sử dụng ở frontend
-    });
-  }
-}
-
+            if (post.userId.toString() !== userId.toString()) {
+        const receiverSocketId = getReceiverSocketId(post.userId.toString());
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit("postLiked", {
+            userName: req.user.fullName
+            // Có thể gửi thêm postId: post._id nếu cần sử dụng ở frontend
+          });
+        }
+      }
     res.status(200).json({
       liked: !isLiked,
       likesCount: post.likes.length,
@@ -149,14 +147,14 @@ export const addComment = async (req, res) => {
 
     post.comments.push(newComment);
     await post.save();
-         if (post.userId.toString() !== userId.toString()) {
-  const receiverSocketId = getReceiverSocketId(post.userId.toString());
-  if (receiverSocketId) {
-    io.to(receiverSocketId).emit("postCommented", {
-      userName: req.user.fullName 
-    });
-  }
-}
+            if (post.userId.toString() !== userId.toString()) {
+        const receiverSocketId = getReceiverSocketId(post.userId.toString());
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit("postCommented", {
+            userName: req.user.fullName 
+          });
+        }
+      }
     // Get the populated comment
     const populatedPost = await Post.findById(postId).populate({
       path: "comments.userId",
