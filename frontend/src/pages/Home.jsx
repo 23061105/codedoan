@@ -20,9 +20,11 @@ import {
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import ChatContainer from "../Components/ChatContainer.jsx";
+import FriendsSidebar from "../Components/FriendsSidebar.jsx";
 import { useChatStore } from "../store/useChatStore.js";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { usePostStore } from "../store/usePostStore.js";
+import { useFriendStore } from "../store/useFriendStore.js";
 import toast from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 
@@ -57,6 +59,12 @@ const SocialHome = () => {
   useEffect(() => {
     getUsers();
     getPosts();
+    
+    // Fetch friend data
+    const friendStore = useFriendStore.getState();
+    friendStore.fetchFriends();
+    friendStore.fetchFriendRequests();
+    friendStore.fetchSentRequests();
 
     // Ensure socket connection is established
     if (authUser && authUser._id) {
@@ -184,7 +192,6 @@ useEffect(() => {
   const formatDate = (date) => {
     return formatDistanceToNow(new Date(date), { addSuffix: true });
   };
-
   // Subscribe to new messages for notifications when chat window is closed
   useEffect(() => {
     const socket = useAuthStore.getState().socket;
@@ -199,12 +206,42 @@ useEffect(() => {
             toast.success(`New message from ${sender.fullName}`);
           }
         }
-      };
-
+      };      // Listen for new messages
       socket.on("newMessage", handleNewMessage);
 
+      /**
+       * Socket event listeners for friend functionality
+       * 
+       * These handlers enable real-time updates of the UI when friend-related
+       * events occur. The Home component registers these listeners to ensure
+       * that friend events are processed even when viewing the home feed.
+       */
+      
+      // Listen for incoming friend requests from other users
+      socket.on("friendRequest", (request) => {
+        // Forward the event to the friend store to update UI and show notification
+        useFriendStore.getState().handleNewFriendRequest(request);
+      });
+
+      // Listen for notifications when someone accepts your friend request
+      socket.on("friendRequestAccepted", (user) => {
+        // Update friends list and show notification via the friend store
+        useFriendStore.getState().handleFriendRequestAccepted(user);
+      });
+      
+      // Listen for notifications when someone removes you from their friends list
+      socket.on("friendRemoved", (data) => {
+        // Update local friends list to maintain consistency with the server
+        useFriendStore.getState().handleFriendRemoved(data);
+      });      // Cleanup function to remove socket listeners when component unmounts
+      // This prevents memory leaks and duplicate event handlers
       return () => {
         socket.off("newMessage", handleNewMessage);
+        
+        // Remove friend-related socket listeners
+        socket.off("friendRequest");
+        socket.off("friendRequestAccepted");
+        socket.off("friendRemoved");
       };
     }
   }, [showMessagePopup, users]);
@@ -214,11 +251,64 @@ useEffect(() => {
     setSelectedUser(user);
     setShowMessagePopup(true);
     toast.success(`Chat started with ${user.fullName}`);
-  };
-
-  // Check if a user is online
+  };  /**
+   * Checks if a user is currently online
+   * @param {string} userId - The ID of the user to check
+   * @returns {boolean} True if the user is online
+   */
   const isUserOnline = (userId) => {
     return onlineUsers.includes(userId);
+  };
+
+  /**
+   * Checks if a user is already a friend of the current user
+   * Contains null checks to prevent UI errors when friends data is loading
+   * 
+   * This is important for determining what UI elements to show in the post feed
+   * (e.g., "Add Friend" button vs "Friend" indicator)
+   * 
+   * @param {string} userId - ID of the user to check
+   * @returns {boolean} True if the user is already a friend
+   */
+  const isCurrentUserFriend = (userId) => {
+    if (!userId) return false;
+    
+    const { friends } = useFriendStore.getState();
+    if (!friends || !Array.isArray(friends)) return false;
+    
+    return friends.some(friend => friend && friend._id === userId);
+  };
+
+  /**
+   * Checks if there is a pending friend request to a user
+   * Used to prevent sending duplicate friend requests
+   * Contains null checks for data safety
+   * 
+   * @param {string} userId - ID of the user to check
+   * @returns {boolean} True if there's already a pending request
+   */
+  const hasPendingRequest = (userId) => {
+    if (!userId) return false;
+    
+    const { sentRequests } = useFriendStore.getState();
+    if (!sentRequests || !Array.isArray(sentRequests)) return false;
+    
+    return sentRequests.some(request => request && request.to && request.to._id === userId);
+  };
+  // Handle sending a friend request
+  const handleSendFriendRequest = async (userId) => {
+    try {
+      if (!userId) {
+        toast.error("Invalid user ID");
+        return;
+      }
+      
+      await useFriendStore.getState().sendFriendRequest(userId);
+      // Toast is already shown in the store function
+    } catch (error) {
+      console.error("Error in handleSendFriendRequest:", error);
+      toast.error(error.message || "Failed to send friend request");
+    }
   };
 
   // Check if current user has liked a post
@@ -706,10 +796,11 @@ useEffect(() => {
                 </>
               )}
             </div>
-          </div>
-
-          {/* RIGHT SIDEBAR */}
+          </div>          {/* RIGHT SIDEBAR */}
           <div className="h-max sticky top-[var(--sticky-top-right)] bottom-0 max-md:hidden">
+            {/* Friends list */}
+            <FriendsSidebar onStartChat={handleMessageClick} />
+            
             {/* MESSAGES */}
             <div className="bg-white rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
@@ -742,66 +833,97 @@ useEffect(() => {
               {/* Danh sách tin nhắn */}
               {isUsersLoading ? (
                 <div className="text-center py-4">Loading...</div>
-              ) : users.length > 0 ? (
-                users.map((user) => (
+              ) : users.length > 0 ? (                users.map((user) => (
                   <div
                     key={user._id}
-                    className="flex gap-4 mb-4 cursor-pointer"
-                    onClick={() => handleMessageClick(user)}
+                    className="flex justify-between items-center mb-4"
                   >
-                    <div className="relative">
-                      <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                        <img
-                          src={user.profilePic || "/avatar.png"}
-                          alt="Profile"
-                          className="w-full h-full rounded-full object-cover"
-                        />
+                    <div 
+                      className="flex gap-4 cursor-pointer"
+                      onClick={() => handleMessageClick(user)}
+                    >
+                      <div className="relative">
+                        <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                          <img
+                            src={user.profilePic || "/avatar.png"}
+                            alt="Profile"
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        </div>
+                        {isUserOnline(user._id) && (
+                          <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
+                        )}
                       </div>
-                      {isUserOnline(user._id) && (
-                        <div className="w-2.5 h-2.5 rounded-full border-2 border-white bg-green-500 absolute bottom-0 right-0"></div>
-                      )}
+                      <div>
+                        <h5 className="font-medium">{user.fullName}</h5>
+                        <p className="text-sm text-gray-500">
+                          {isUserOnline(user._id) ? "Online" : "Offline"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h5 className="font-medium">{user.fullName}</h5>
-                      <p className="text-sm text-gray-500">
-                        {isUserOnline(user._id) ? "Online" : "Offline"}
-                      </p>
-                    </div>
+                    {!isCurrentUserFriend(user._id) && !hasPendingRequest(user._id) && user._id !== authUser?._id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSendFriendRequest(user._id);
+                        }}
+                        className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-200"
+                      >
+                        Add Friend
+                      </button>
+                    )}
+                    {hasPendingRequest(user._id) && (
+                      <span className="text-xs text-gray-500">Request Sent</span>
+                    )}
                   </div>
                 ))
               ) : (
                 <div className="text-center py-4">No users found</div>
               )}
-            </div>
-
-            {/* FRIEND REQUESTS */}
+            </div>            {/* FRIEND REQUESTS */}
             <div className="mt-4">
-              <h4 className="text-gray-500 font-medium my-4">Requests</h4>
-              {[1, 2, 3].map((item, index) => (
-                <div key={index} className="bg-white p-4 rounded-lg mb-3">
-                  <div className="flex gap-4 mb-4">
-                    <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
-                      <img
-                        src={`/placeholder.svg?height=50&width=50&text=${item}`}
-                        alt="Profile"
-                        className="w-full"
-                      />
+              <h4 className="text-gray-500 font-medium my-4">Friend Requests</h4>
+              {isUsersLoading ? (
+                <div className="text-center py-4">Loading...</div>
+              ) : useFriendStore.getState().friendRequests.length > 0 ? (
+                useFriendStore.getState().friendRequests.map((request) => (
+                  <div key={request._id} className="bg-white p-4 rounded-lg mb-3">
+                    <div className="flex justify-between">
+                      <div className="flex gap-4 mb-4">
+                        <div className="w-[2.7rem] aspect-square rounded-full overflow-hidden">
+                          <img
+                            src={request.from.profilePic || "/avatar.png"}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h5 className="font-medium">{request.from.fullName}</h5>
+                          <p className="text-gray-500 text-sm">
+                            {new Date(request.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h5 className="font-medium">Hajia Bintu</h5>
-                      <p className="text-gray-500 text-sm">8 mutual friends</p>
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={() => useFriendStore.getState().respondToFriendRequest(request._id, true)}
+                        className="bg-purple-500 text-white py-2 px-4 rounded-full text-sm font-medium hover:opacity-80 transition-all"
+                      >
+                        Accept
+                      </button>
+                      <button 
+                        onClick={() => useFriendStore.getState().respondToFriendRequest(request._id, false)}
+                        className="bg-white border border-gray-200 py-2 px-4 rounded-full text-sm font-medium hover:bg-gray-100 transition-all"
+                      >
+                        Decline
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-4">
-                    <button className="bg-purple-500 text-white py-2 px-4 rounded-full text-sm font-medium hover:opacity-80 transition-all">
-                      Accept
-                    </button>
-                    <button className="bg-white border border-gray-200 py-2 px-4 rounded-full text-sm font-medium hover:bg-gray-100 transition-all">
-                      Decline
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">No friend requests</div>
+              )}
             </div>
           </div>
         </div>
