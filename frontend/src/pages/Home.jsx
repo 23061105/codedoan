@@ -61,6 +61,11 @@ const SocialHome = () => {
   const [showAllComments, setShowAllComments] = useState({});
   const fileInputRef = useRef(null);
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  const [hasNewNotification, setHasNewNotification] = useState(() => {
+    return localStorage.getItem("has_unseen_notifications") === "true";
+  });
+  const { notifications: authNotifications } = useAuthStore();
+
   // Fetch users, ensure socket connection, and load posts when component mounts
   useEffect(() => {
     getUsers();
@@ -77,6 +82,16 @@ const SocialHome = () => {
       connectSocket();
     }
   }, [getUsers, connectSocket, authUser, getPosts]);
+
+  useEffect(() => {
+    const seenCount = parseInt(
+      localStorage.getItem("notifications_seen_count") || "0",
+      10
+    );
+    if (authNotifications.length > seenCount) {
+      setHasNewNotification(true);
+    }
+  }, [authNotifications]);
 
   // Handle post image change
   const handleImageChange = (e) => {
@@ -373,25 +388,52 @@ const SocialHome = () => {
               </a>
               <div
                 className="flex items-center h-14 cursor-pointer transition-all relative hover:bg-gray-100"
-                onClick={() => setShowNotificationPopup(!showNotificationPopup)}
+                onClick={() => {
+                  setShowNotificationPopup(!showNotificationPopup);
+                  setHasNewNotification(false);
+                  localStorage.setItem("has_unseen_notifications", "false");
+                }}
               >
                 <span className="relative">
-                  <Bell className="text-gray-500 text-[1.4rem] ml-4 relative" />
-                  <small className="bg-red-500 text-white text-[0.7rem] w-fit rounded-full px-1.5 py-0.5 absolute -top-1 -right-1">
-                    9+
-                  </small>
+                  <Bell
+                    className={`text-[1.4rem] ml-4 relative ${
+                      hasNewNotification ? "text-red-500" : "text-gray-500"
+                    }`}
+                  />
+                  {hasNewNotification && (
+                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
                 </span>
                 <h3 className="ml-4 max-lg:hidden">Notifications</h3>
 
                 {/* Popup thông báo - toggle hiển thị bằng showNotificationPopup */}
                 {showNotificationPopup && (
                   <div className="absolute top-0 left-[110%] w-[30rem] bg-white rounded-lg p-4 shadow-lg z-10 max-md:left-[-20rem] max-md:w-[20rem]">
+                    {/* Header + nút Mark all as read */}
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="font-semibold text-base">Notifications</p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // tránh đóng popup khi bấm
+                          useAuthStore.getState().clearAllNotifications();
+                          setHasNewNotification(false);
+                          localStorage.setItem(
+                            "has_unseen_notifications",
+                            "false"
+                          );
+                        }}
+                        className="text-sm text-purple-500 hover:underline"
+                      >
+                        Mark all as read
+                      </button>
+                    </div>
+
                     {notifications.length === 0 ? (
                       <p className="text-gray-500">Không có thông báo nào</p>
                     ) : (
                       notifications
-                        .slice() // clone
-                        .reverse() // hiển thị mới nhất lên đầu
+                        .slice()
+                        .reverse()
                         .map((notif, index) => (
                           <div
                             key={index}

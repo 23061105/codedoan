@@ -36,14 +36,26 @@ export const useAuthStore = create((set, get) => ({
     if (alreadyExists) return;
 
     const updated = [...existing, notif];
+
+    //Có thông báo mới → bật flag
+    localStorage.setItem("has_unseen_notifications", "true");
     localStorage.setItem("notifications", JSON.stringify(updated));
+
     set({ notifications: updated });
 
     toast(notif.message, {
-      duration: 4000, // toast tự tắt sau 4 giây
+      duration: 4000,
     });
   },
 
+  clearAllNotifications: () => {
+    localStorage.removeItem("notifications");
+
+    // ✅ Đánh dấu là đã xem
+    localStorage.setItem("has_unseen_notifications", "false");
+
+    set({ notifications: [] });
+  },
   removeNotification: (index) => {
     const updated = get().notifications.filter((_, i) => i !== index);
     localStorage.setItem("notifications", JSON.stringify(updated));
@@ -117,15 +129,15 @@ export const useAuthStore = create((set, get) => ({
     }
   },
   connectSocket: () => {
-    const { authUser, socket: existingSocket } = get();
+    const { authUser } = get();
 
-    if (!authUser) return;
+    if (!authUser || get().socket?.connected) return;
 
-    // ❌ Ngắt kết nối socket cũ và gỡ toàn bộ listener để tránh trùng
-    if (existingSocket) {
-      existingSocket.removeAllListeners();
-      existingSocket.disconnect();
-    }
+    // // ❌ Ngắt kết nối socket cũ và gỡ toàn bộ listener để tránh trùng
+    // if (existingSocket) {
+    //   existingSocket.removeAllListeners();
+    //   existingSocket.disconnect();
+    // }
 
     const socket = io(BASE_URL, {
       query: {
@@ -220,22 +232,6 @@ export const useAuthStore = create((set, get) => ({
         }
       }
     });
-
-    socket.on("postLiked", ({ userName }) => {
-      get().addNotification({
-        message: `${userName} đã thích bài viết của bạn`,
-        time: new Date().toISOString(),
-        type: "like",
-      });
-    });
-
-    socket.on("postCommented", ({ userName }) => {
-      get().addNotification({
-        message: `${userName} đã bình luận bài viết của bạn`,
-        time: new Date().toISOString(),
-        type: "comment",
-      });
-    });
   },
 
   disconnectSocket: () => {
@@ -248,5 +244,9 @@ export const useAuthStore = create((set, get) => ({
       socket.off("friendRemoved");
       socket.disconnect();
     }
+  },
+  clearAllNotifications: () => {
+    localStorage.removeItem("notifications");
+    set({ notifications: [] });
   },
 }));
