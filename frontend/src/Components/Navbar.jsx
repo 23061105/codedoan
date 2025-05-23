@@ -1,36 +1,43 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useFriendStore } from "../store/useFriendStore";
-import {
-  LogOut,
-  MessageSquare,
-  Settings,
-  User,
-  UserPlus,
-  Bell,
-  X,
-} from "lucide-react";
+import { LogOut, MessageSquare, Settings, User, UserPlus, Bell, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 /**
  * Navbar Component
- *
+ * 
  * This component includes friend request notification functionality:
  * - Displays a notification bell with count of pending friend requests
  * - Shows a dropdown with friend request details when clicked
  * - Provides buttons to accept or decline requests directly from the navbar
  */
 const Navbar = () => {
-  const { logout, authUser } = useAuthStore();
+  const { logout, authUser, socket } = useAuthStore();
   const { requests, fetchRequests } = useFriendStore();
   const [showNotifications, setShowNotifications] = useState(false);
-
+  
   // Fetch friend requests when the component mounts
   useEffect(() => {
     if (authUser) {
       fetchRequests();
     }
   }, [fetchRequests, authUser]);
+  
+  // Listen for friend request socket events
+  useEffect(() => {
+    if (socket) {
+      const handleFriendRequest = () => {
+        fetchRequests();
+      };
+      
+      socket.on("friendRequest", handleFriendRequest);
+      
+      return () => {
+        socket.off("friendRequest", handleFriendRequest);
+      };
+    }
+  }, [socket, fetchRequests]);
   return (
     <header
       className="border-b border-base-300 fixed w-full top-0 z-40 
@@ -51,10 +58,9 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {authUser && authUser?.role !== "admin" && (
-              <div className="relative">
-                {/* Friend request notification bell with counter badge */}
-                <button
+            {authUser && (
+              <div className="relative">                {/* Friend request notification bell with counter badge */}
+                <button 
                   className="btn btn-sm gap-2 transition-colors relative"
                   onClick={() => setShowNotifications(!showNotifications)}
                 >
@@ -66,22 +72,20 @@ const Navbar = () => {
                     </span>
                   )}
                 </button>
-
+                
                 {/* Friend request dropdown menu */}
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-72 bg-white shadow-xl rounded-lg z-50">
                     <div className="p-3 border-b">
                       <h3 className="font-medium">Friend Requests</h3>
-                    </div>{" "}
-                    <div className="max-h-96 overflow-y-auto">
+                    </div>                    <div className="max-h-96 overflow-y-auto">
                       {!requests || requests.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">
                           No new notifications
                         </div>
                       ) : (
-                        requests.map((request) => (
-                          <Link
-                            key={request._id}
+                        requests.map(request => (                          <Link 
+                            key={request._id} 
                             to="/profile"
                             className="flex items-start gap-3 p-3 hover:bg-gray-50 border-b"
                             onClick={() => {
@@ -90,52 +94,39 @@ const Navbar = () => {
                           >
                             {/* Friend request sender info */}
                             <div className="flex-shrink-0">
-                              <img
-                                src={request.profilePic || "/avatar.png"}
-                                alt=""
+                              <img 
+                                src={request.profilePic || "/avatar.png"} 
+                                alt="" 
                                 className="w-10 h-10 rounded-full object-cover"
                               />
                             </div>
                             <div className="flex-1">
                               <p>
-                                <span className="font-medium">
-                                  {request.fullName}
-                                </span>
-                                <span className="text-gray-600">
-                                  {" "}
-                                  sent you a friend request
-                                </span>
+                                <span className="font-medium">{request.fullName}</span> 
+                                <span className="text-gray-600"> sent you a friend request</span>
                               </p>
                               <p className="text-xs text-gray-500">
-                                {request.createdAt &&
-                                  new Date(
-                                    request.createdAt
-                                  ).toLocaleDateString()}
+                                {request.createdAt && new Date(request.createdAt).toLocaleDateString()}
                               </p>
-                            </div>{" "}
-                            {/* Accept/decline buttons */}
+                            </div>                            {/* Accept/decline buttons */}
                             <div className="flex gap-1">
-                              <button
+                              <button 
                                 className="p-1 bg-primary text-white rounded-full"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  useFriendStore
-                                    .getState()
-                                    .acceptRequest(request._id);
+                                  useFriendStore.getState().acceptRequest(request._id);
                                   setShowNotifications(false);
                                 }}
                               >
                                 <User className="w-3 h-3" />
                               </button>
-                              <button
+                              <button 
                                 className="p-1 bg-gray-200 rounded-full"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  useFriendStore
-                                    .getState()
-                                    .declineRequest(request._id);
+                                  useFriendStore.getState().declineRequest(request._id);
                                   setShowNotifications(false);
                                 }}
                               >
@@ -150,7 +141,7 @@ const Navbar = () => {
                 )}
               </div>
             )}
-
+            
             <Link
               to={"/settings"}
               className={`

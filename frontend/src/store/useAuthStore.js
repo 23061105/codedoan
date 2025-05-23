@@ -6,12 +6,7 @@ import { useFriendStore } from "./useFriendStore"; // Import useFriendStore here
 
 const BASE_URL =
   import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
-
-// 🚀 Lấy danh sách thông báo từ localStorage
-const savedNotifications = JSON.parse(
-  localStorage.getItem("notifications") || "[]"
-);
-
+const savedNotifications = JSON.parse(localStorage.getItem("notifications") || "[]");
 export const useAuthStore = create((set, get) => ({
   authUser: null,
   isSigningUp: false,
@@ -21,50 +16,10 @@ export const useAuthStore = create((set, get) => ({
   onlineUsers: [],
   socket: null,
 
-  notifications: savedNotifications,
-
-  //Thêm thông báo mới (tránh trùng), lưu vào localStorage, hiển thị toast
-  addNotification: (notif) => {
-    const existing = get().notifications;
-
-    const alreadyExists = existing.some(
-      (n) =>
-        n.message === notif.message &&
-        Math.abs(new Date(n.time) - new Date(notif.time)) < 2000
-    );
-
-    if (alreadyExists) return;
-
-    const updated = [...existing, notif];
-
-    //Có thông báo mới → bật flag
-    localStorage.setItem("has_unseen_notifications", "true");
-    localStorage.setItem("notifications", JSON.stringify(updated));
-
-    set({ notifications: updated });
-
-    toast(notif.message, {
-      duration: 4000,
-    });
-  },
-
-  clearAllNotifications: () => {
-    localStorage.removeItem("notifications");
-
-    // ✅ Đánh dấu là đã xem
-    localStorage.setItem("has_unseen_notifications", "false");
-
-    set({ notifications: [] });
-  },
-  removeNotification: (index) => {
-    const updated = get().notifications.filter((_, i) => i !== index);
-    localStorage.setItem("notifications", JSON.stringify(updated));
-    set({ notifications: updated });
-  },
-
   checkAuth: async () => {
     try {
       const res = await axiosInstance.get("/auth/check");
+      //Thiết lập trạng thái người dùng
       set({ authUser: res.data });
       get().connectSocket();
     } catch (error) {
@@ -74,6 +29,50 @@ export const useAuthStore = create((set, get) => ({
       set({ isCheckingAuth: false });
     }
   },
+
+  notifications: savedNotifications,
+
+  //Thêm thông báo mới (tránh trùng), lưu vào localStorage, hiển thị toast
+ addNotification: (notif) => {
+  const existing = get().notifications;
+
+  const alreadyExists = existing.some(
+    (n) =>
+      n.message === notif.message &&
+      Math.abs(new Date(n.time) - new Date(notif.time)) < 2000
+  );
+
+  if (alreadyExists) return;
+
+  const updated = [...existing, notif];
+
+  //Có thông báo mới → bật flag
+  localStorage.setItem("has_unseen_notifications", "true");
+  localStorage.setItem("notifications", JSON.stringify(updated));
+
+  set({ notifications: updated });
+
+  toast(notif.message, {
+    duration: 4000,
+  });
+},
+
+clearAllNotifications: () => {
+  localStorage.removeItem("notifications");
+
+  // ✅ Đánh dấu là đã xem
+  localStorage.setItem("has_unseen_notifications", "false");
+
+  set({ notifications: [] });
+},
+
+
+  removeNotification: (index) => {
+    const updated = get().notifications.filter((_, i) => i !== index);
+    localStorage.setItem("notifications", JSON.stringify(updated));
+    set({ notifications: updated });
+  },
+
 
   signup: async (data) => {
     set({ isSigningUp: true });
@@ -96,6 +95,7 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/login", data);
       set({ authUser: res.data });
       toast.success("Logged in successfully");
+
       get().connectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
@@ -107,9 +107,9 @@ export const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
-      get().disconnectSocket();
       set({ authUser: null });
       toast.success("Logged out successfully");
+      get().disconnectSocket();
     } catch (error) {
       toast.error(error.response.data.message);
     }
@@ -130,14 +130,7 @@ export const useAuthStore = create((set, get) => ({
   },
   connectSocket: () => {
     const { authUser } = get();
-
     if (!authUser || get().socket?.connected) return;
-
-    // // ❌ Ngắt kết nối socket cũ và gỡ toàn bộ listener để tránh trùng
-    // if (existingSocket) {
-    //   existingSocket.removeAllListeners();
-    //   existingSocket.disconnect();
-    // }
 
     const socket = io(BASE_URL, {
       query: {
@@ -146,8 +139,7 @@ export const useAuthStore = create((set, get) => ({
     });
     socket.connect();
 
-    set({ socket: socket });
-    socket.on("getOnlineUsers", (userIds) => {
+    set({ socket: socket });    socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
 
@@ -157,14 +149,13 @@ export const useAuthStore = create((set, get) => ({
         time: new Date().toISOString(),
         type: "like",
       });
-    });
-    socket.on("postCommented", ({ userName }) => {
+    });    socket.on("postCommented", ({ userName }) => {
       get().addNotification({
         message: `${userName} đã bình luận bài viết của bạn`,
         time: new Date().toISOString(),
         type: "comment",
       });
-    }); // Friend request notifications
+    });     // Friend request notifications
     socket.on("friendRequest", ({ from, fromId, refreshFriends }) => {
       get().addNotification({
         message: `${from} sent you a friend request`,
@@ -172,23 +163,21 @@ export const useAuthStore = create((set, get) => ({
         type: "friendRequest",
         fromId,
       });
-
-      // Refresh friend requests list if needed
-      if (refreshFriends) {
-        const { fetchRequests } = useFriendStore.getState();
-        if (fetchRequests) {
-          fetchRequests();
-        }
+      
+      // Always refresh friend requests to ensure immediate UI update
+      const { fetchRequests } = useFriendStore.getState();
+      if (fetchRequests) {
+        fetchRequests();
       }
     });
-    socket.on("friendAccepted", ({ by, byId, refreshFriends }) => {
+      socket.on("friendAccepted", ({ by, byId, refreshFriends }) => {
       get().addNotification({
         message: `${by} accepted your friend request`,
         time: new Date().toISOString(),
         type: "friendAccepted",
         byId,
       });
-
+      
       // Trigger friend list refresh
       const { fetchFriends, fetchSentRequests } = useFriendStore.getState();
       if (fetchFriends) {
@@ -196,7 +185,7 @@ export const useAuthStore = create((set, get) => ({
         fetchSentRequests();
       }
     });
-
+    
     // Listen for friend removal notification
     socket.on("friendRemoved", ({ by, byId, refreshFriends }) => {
       get().addNotification({
@@ -205,7 +194,7 @@ export const useAuthStore = create((set, get) => ({
         type: "friendRemoved",
         byId,
       });
-
+      
       // Trigger friend list refresh in the FriendStore
       if (refreshFriends) {
         const { fetchFriends } = useFriendStore.getState();
@@ -214,7 +203,7 @@ export const useAuthStore = create((set, get) => ({
         }
       }
     });
-
+    
     // Listen for request cancellation
     socket.on("requestCanceled", ({ by, byId, refreshFriends }) => {
       get().addNotification({
@@ -223,7 +212,7 @@ export const useAuthStore = create((set, get) => ({
         type: "requestCanceled",
         byId,
       });
-
+      
       // Refresh requests if needed
       if (refreshFriends) {
         const { fetchRequests } = useFriendStore.getState();
@@ -233,7 +222,6 @@ export const useAuthStore = create((set, get) => ({
       }
     });
   },
-
   disconnectSocket: () => {
     const socket = get().socket;
     if (socket?.connected) {
@@ -242,11 +230,15 @@ export const useAuthStore = create((set, get) => ({
       socket.off("friendRequest");
       socket.off("friendRequestAccepted");
       socket.off("friendRemoved");
+      socket.removeAllListeners();
       socket.disconnect();
     }
   },
-  clearAllNotifications: () => {
-    localStorage.removeItem("notifications");
-    set({ notifications: [] });
-  },
+
+      clearAllNotifications: () => {
+  localStorage.removeItem("notifications");
+  set({ notifications: [] });
+},
+
+
 }));

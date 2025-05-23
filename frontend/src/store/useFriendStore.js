@@ -107,4 +107,25 @@ export const useFriendStore = create((set, get) => ({
       get().fetchSentRequests();
     }
   },
+  // Handle new friend request received via socket
+  handleNewFriendRequest: (request) => {
+    // Immediately fetch requests to update UI with the new request
+    get().fetchRequests();
+    
+    // You could also optimistically update the local state if you have the complete request data
+    // but fetching ensures we have the most accurate data
+  },
+
+  // Handle when someone accepts your friend request
+  handleFriendRequestAccepted: (user) => {
+    // Update friends and sent requests lists
+    get().fetchFriends();
+    get().fetchSentRequests();
+  },
+
+  // Handle when someone removes you as a friend
+  handleFriendRemoved: (data) => {
+    // Update friends list
+    get().fetchFriends();
+  },
 }));

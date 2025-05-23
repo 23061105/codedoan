@@ -29,10 +29,9 @@ const FriendList = () => {
     sendFriendRequest,
     respondToFriendRequest,
     removeFriend,
-    loading 
-  } = useFriendStore();
+    loading   } = useFriendStore();
   
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, socket } = useAuthStore();
 
   // Fetch all friend data when component mounts
   useEffect(() => {
@@ -40,6 +39,34 @@ const FriendList = () => {
     fetchFriendRequests();
     fetchSentRequests();
   }, [fetchFriends, fetchFriendRequests, fetchSentRequests]);
+  
+  // Listen for socket events related to friend requests
+  useEffect(() => {
+    if (socket) {
+      const handleFriendRequest = () => {
+        fetchFriendRequests();
+      };
+      
+      const handleFriendAccepted = () => {
+        fetchFriends();
+        fetchSentRequests();
+      };
+      
+      const handleFriendRemoved = () => {
+        fetchFriends();
+      };
+      
+      socket.on("friendRequest", handleFriendRequest);
+      socket.on("friendAccepted", handleFriendAccepted);
+      socket.on("friendRemoved", handleFriendRemoved);
+      
+      return () => {
+        socket.off("friendRequest", handleFriendRequest);
+        socket.off("friendAccepted", handleFriendAccepted);
+        socket.off("friendRemoved", handleFriendRemoved);
+      };
+    }
+  }, [socket, fetchFriendRequests, fetchFriends, fetchSentRequests]);
 
   /**
    * Checks if a user is currently online by looking at the onlineUsers array

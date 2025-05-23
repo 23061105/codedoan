@@ -19,12 +19,33 @@ import { Users } from 'lucide-react';
  */
 const FriendsSidebar = ({ onStartChat }) => {
   const { friends, fetchFriends, loading } = useFriendStore();
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, socket } = useAuthStore();
   
   // Fetch friends data when component mounts
   useEffect(() => {
     fetchFriends();
   }, [fetchFriends]);
+  
+  // Listen for socket events to update friends list in real-time
+  useEffect(() => {
+    if (socket) {
+      const handleFriendAccepted = () => {
+        fetchFriends();
+      };
+      
+      const handleFriendRemoved = () => {
+        fetchFriends();
+      };
+      
+      socket.on("friendAccepted", handleFriendAccepted);
+      socket.on("friendRemoved", handleFriendRemoved);
+      
+      return () => {
+        socket.off("friendAccepted", handleFriendAccepted);
+        socket.off("friendRemoved", handleFriendRemoved);
+      };
+    }
+  }, [socket, fetchFriends]);
   
   /**
    * Checks if a user is currently online
